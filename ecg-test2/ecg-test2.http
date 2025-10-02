@@ -1,0 +1,6 @@
+@ecg_test2_HostAddress = http://localhost:5104
+
+GET {{ecg_test2_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###

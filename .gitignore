@@ -1,0 +1,48 @@
+# Временные файлы IDE
+.vs/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+
+# Результаты сборки
+[Bb]in/
+[Oo]bj/
+[Dd]ebug/
+[Rr]elease/
+*.pdb
+*.cache
+
+# Docker
+# Игнорируем только служебные файлы, но не Dockerfile!
+docker-compose.override.yml
+docker-compose.Designer.yml
+
+# Базы данных (локальные)
+*.mdf
+*.ldf
+App_Data/
+app.db
+*.db
+
+# Локальные конфиги
+appsettings.Development.json
+appsettings.Local.json
+appsettings.private.*.json
+appsettings.Production.json
+
+# Файлы окружения
+.env
+*.env.local
+*.Designer.env
+
+# EF Core (сохраняем миграции, но не временные файлы)
+Migrations/*.Designer.cs
+Migrations/*.resx
+
+# Временные файлы резервных копий
+*.Backup*.tmp
+*.tmp
+
+# Файлы миграций (если они генерируются автоматически)
+# DataAccess/Migrations/
