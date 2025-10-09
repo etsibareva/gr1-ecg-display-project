@@ -76,6 +76,18 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
         };
     });
 
+// настройка CORS для запросов клиента Radzen
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AllowBlazorClient", policy =>
+    {
+        policy.WithOrigins("http://localhost:5101", "http://localhost:5104")
+              .AllowAnyHeader()
+              .AllowAnyMethod()
+              .AllowCredentials();
+    });
+});
+
 var app = builder.Build();
 
 if (app.Environment.IsDevelopment())
@@ -92,6 +104,10 @@ using (var scope = app.Services.CreateScope())
     var npyService = scope.ServiceProvider.GetRequiredService<NpyFileService>();
     await npyService.InitializeAsync();
 }
+
+// настройка CORS для запросов клиента Radzen
+app.UseCors("AllowBlazorClient");
+app.UseRouting();
 
 // первый middleware - для проверки blacklist access токенов
 app.UseMiddleware<TokenBlackListMiddlewareService>();

@@ -1,11 +1,13 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
-VisualStudioVersion = 17.14.36429.23 d17.14
+VisualStudioVersion = 17.14.36429.23
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ecg-test2", "ecg-test2\ecg-test2.csproj", "{40796FC9-84A3-4217-B3D3-62473CD431C5}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DataAccess", "DataAccess\DataAccess.csproj", "{1E9B6BED-7D30-40FD-9D35-3AB1D1683AC9}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BlazorApp1", "BlazorApp1\BlazorApp1.csproj", "{F9FA5133-7417-4A9D-891F-4F702C3DA52D}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -21,6 +23,10 @@ Global
 		{1E9B6BED-7D30-40FD-9D35-3AB1D1683AC9}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{1E9B6BED-7D30-40FD-9D35-3AB1D1683AC9}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{1E9B6BED-7D30-40FD-9D35-3AB1D1683AC9}.Release|Any CPU.Build.0 = Release|Any CPU
+		{F9FA5133-7417-4A9D-891F-4F702C3DA52D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{F9FA5133-7417-4A9D-891F-4F702C3DA52D}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{F9FA5133-7417-4A9D-891F-4F702C3DA52D}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{F9FA5133-7417-4A9D-891F-4F702C3DA52D}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

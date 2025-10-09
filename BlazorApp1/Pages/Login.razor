@@ -1,0 +1,94 @@
+﻿@page "/login"
+@inject NavigationManager Navigation
+@inject HttpClient Http
+@inject NotificationService NotificationService
+@inject IJSRuntime JSRuntime
+
+<RadzenStack JustifyContent="JustifyContent.Center" AlignItems="AlignItems.Center" Style="height: 100vh; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+    <RadzenCard Style="width: 400px; padding: 30px;">
+        <ChildContent>
+            <RadzenStack Gap="25px">
+                <div style="text-align: center;">
+                    <RadzenText Style="font-size: 28px; font-weight: bold; color: #333;">🏥 Вход</RadzenText>
+                </div>
+
+                <RadzenStack Gap="15px">
+                    <div>
+                        <RadzenLabel Text="Логин" />
+                        <RadzenTextBox @bind-Value="loginRequest.Login" Placeholder="Логин" Style="width: 100%;" />
+                    </div>
+
+                    <div>
+                        <RadzenLabel Text="Пароль" />
+                        <RadzenPassword @bind-Value="loginRequest.Password" Placeholder="Пароль" Style="width: 100%;" />
+                    </div>
+
+                    <RadzenButton Click="HandleLogin" Text="Войти" ButtonStyle="ButtonStyle.Primary"
+                                  Style="width: 100%;" Disabled="@isLoading" />
+                </RadzenStack>
+
+                @if (!string.IsNullOrEmpty(errorMessage))
+                {
+                    <RadzenAlert ShowIcon="true" Severity="AlertSeverity.Error">
+                        <span>@errorMessage</span>
+                    </RadzenAlert>
+                }
+            </RadzenStack>
+        </ChildContent>
+    </RadzenCard>
+</RadzenStack>
+
+@code {
+    private LoginRequest loginRequest = new();
+    private string errorMessage = "";
+    private bool isLoading = false;
+
+    private async Task HandleLogin()
+    {
+        if (string.IsNullOrEmpty(loginRequest.Login) || string.IsNullOrEmpty(loginRequest.Password))
+        {
+            errorMessage = "Заполните все поля";
+            return;
+        }
+
+        isLoading = true;
+        errorMessage = "";
+        StateHasChanged();
+
+        try
+        {
+            var response = await Http.PostAsJsonAsync("api/auth/login", loginRequest);
+
+            if (response.IsSuccessStatusCode)
+            {
+                var authResponse = await response.Content.ReadFromJsonAsync<AuthResponse>();
+                await JSRuntime.InvokeVoidAsync("localStorage.setItem", "authToken", authResponse.AccessToken);
+                Navigation.NavigateTo("/doctor", true);
+            }
+            else
+            {
+                errorMessage = "Неверный логин или пароль";
+            }
+        }
+        catch
+        {
+            errorMessage = "Ошибка подключения";
+        }
+        finally
+        {
+            isLoading = false;
+            StateHasChanged();
+        }
+    }
+
+    public class LoginRequest
+    {
+        public string Login { get; set; } = "";
+        public string Password { get; set; } = "";
+    }
+
+    public class AuthResponse
+    {
+        public string AccessToken { get; set; } = "";
+    }
+}

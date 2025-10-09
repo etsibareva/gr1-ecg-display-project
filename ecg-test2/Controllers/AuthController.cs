@@ -172,5 +172,26 @@ namespace ecg_test2.Controllers
 
             return Ok(new { message = "Logged out successfully" });
         }
+
+        [HttpGet("me")]
+        [Authorize]
+        public async Task<IActionResult> GetCurrentUser()
+        {
+            var userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value);
+            var doctor = await context.doctors.FindAsync(userId);
+
+            if (doctor == null)
+                return NotFound("User not found");
+
+            return Ok(new
+            {
+                doctor.IdDoctor,
+                doctor.FirstName,
+                doctor.LastName,
+                doctor.Patronym,
+                doctor.Email,
+                doctor.Login
+            });
+        }
     }
 }

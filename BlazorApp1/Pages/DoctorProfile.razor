@@ -1,0 +1,123 @@
+﻿@page "/doctor"
+@inject NavigationManager Navigation
+@inject IJSRuntime JSRuntime
+@inject HttpClient Http
+
+<RadzenStack Gap="20px" Style="padding: 20px; max-width: 800px; margin: 0 auto;">
+
+    <!-- Шапка -->
+    <RadzenCard>
+        <ChildContent>
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+                <RadzenText Style="font-size: 24px; font-weight: bold;">👨‍⚕️ Личный кабинет</RadzenText>
+                <RadzenButton Click="HandleLogout" Text="Выйти" ButtonStyle="ButtonStyle.Danger" />
+            </div>
+        </ChildContent>
+    </RadzenCard>
+
+    <!-- Информация -->
+    <RadzenCard>
+        <ChildContent>
+            <RadzenText Style="font-size: 18px; font-weight: bold; margin-bottom: 20px;">Информация о враче</RadzenText>
+
+            <RadzenStack Gap="15px">
+                <div style="display: flex; align-items: center; gap: 10px;">
+                    <RadzenIcon Icon="person" Style="color: #6c757d; width: 20px;" />
+                    <div>
+                        <div style="font-weight: 500;">ФИО</div>
+                        <div style="color: #666;">@($"{doctor?.LastName} {doctor?.FirstName} {doctor?.Patronym}")</div>
+                    </div>
+                </div>
+
+                <div style="display: flex; align-items: center; gap: 10px;">
+                    <RadzenIcon Icon="email" Style="color: #6c757d; width: 20px;" />
+                    <div>
+                        <div style="font-weight: 500;">Email</div>
+                        <div style="color: #666;">@doctor?.Email</div>
+                    </div>
+                </div>
+
+                <div style="display: flex; align-items: center; gap: 10px;">
+                    <RadzenIcon Icon="badge" Style="color: #6c757d; width: 20px;" />
+                    <div>
+                        <div style="font-weight: 500;">Логин</div>
+                        <div style="color: #666;">@doctor?.Login</div>
+                    </div>
+                </div>
+            </RadzenStack>
+        </ChildContent>
+    </RadzenCard>
+
+    <!-- ОДНА КНОПКА -->
+    <RadzenCard>
+        <ChildContent>
+            <div style="text-align: center; padding: 20px;">
+                <RadzenButton Click="GoToRecords" Text="📋 Перейти к записям ЭКГ"
+                              ButtonStyle="ButtonStyle.Primary" Size="ButtonSize.Large"
+                              Icon="list_alt" Style="font-size: 16px; padding: 15px 30px;" />
+            </div>
+        </ChildContent>
+    </RadzenCard>
+
+</RadzenStack>
+
+@code {
+    private DoctorInfo? doctor;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadDoctorInfo();
+    }
+
+    private async Task LoadDoctorInfo()
+    {
+        try
+        {
+            var token = await JSRuntime.InvokeAsync<string>("localStorage.getItem", "authToken");
+
+            if (string.IsNullOrEmpty(token))
+            {
+                Navigation.NavigateTo("/login");
+                return;
+            }
+
+            Http.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
+
+            var response = await Http.GetAsync("api/auth/me");
+
+            if (response.IsSuccessStatusCode)
+            {
+                doctor = await response.Content.ReadFromJsonAsync<DoctorInfo>();
+            }
+            else
+            {
+                Navigation.NavigateTo("/login");
+            }
+        }
+        catch
+        {
+            Navigation.NavigateTo("/login");
+        }
+    }
+
+    private void GoToRecords()
+    {
+        Navigation.NavigateTo("/ecg-viewer");
+    }
+
+    private async Task HandleLogout()
+    {
+        await JSRuntime.InvokeVoidAsync("localStorage.removeItem", "authToken");
+        Navigation.NavigateTo("/login", true);
+    }
+
+    public class DoctorInfo
+    {
+        public int IdDoctor { get; set; }
+        public string FirstName { get; set; } = "";
+        public string LastName { get; set; } = "";
+        public string Patronym { get; set; } = "";
+        public string Email { get; set; } = "";
+        public string Login { get; set; } = "";
+    }
+}

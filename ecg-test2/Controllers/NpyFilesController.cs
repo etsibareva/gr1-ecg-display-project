@@ -153,6 +153,15 @@ namespace ecg_test2.Controllers
 
             var hasFile = !string.IsNullOrEmpty(record.SignalObjectName);
 
+            // Определяем частоту дискретизации по типу сигнала
+            int samplingRate = record.Type switch
+            {
+                1 => 500,  // ЭКГ
+                2 => 1000, // ММГ
+                3 => 200,  // ЭЭГ
+                _ => 500   // по умолчанию
+            };
+
             return Ok(new
             {
                 RecordId = recordId,
@@ -160,7 +169,10 @@ namespace ecg_test2.Controllers
                 ObjectName = record.SignalObjectName,
                 OriginalFileName = record.SignalOriginalFileName,
                 FileSize = record.SignalFileSize,
-                UploadedAt = record.SignalUploadedAt
+                UploadedAt = record.SignalUploadedAt,
+                SamplingRate = samplingRate,
+                RC = record.RC,
+                Type = record.Type
             });
         }
 
@@ -215,76 +227,24 @@ namespace ecg_test2.Controllers
             }
         }
 
-
-        // вариант объединенный - требует странной отправки данных (не json, а через параметры POST-запроса) 
-        /*
-        [HttpPost("safe")]
-        public async Task<IActionResult> UploadNpyFile([FromForm] CreateRecordRequest request, [FromForm] IFormFile file)
+        [HttpGet("doctor-records/{doctorId}")]
+        public async Task<IActionResult> GetDoctorRecords(int doctorId)
         {
-            if (file == null || file.Length == 0)
-                return BadRequest("NPY file is required");
-
-            if (Path.GetExtension(file.FileName).ToLower() != ".npy")
-                return BadRequest("Only .npy files are supported");
-
-            try
-            {
-                // Проверка существования связанных сущностей
-                var doctor = await context.doctors.FindAsync(request.IdDoctor);
-                if (doctor == null)
-                    return BadRequest($"Doctor with ID {request.IdDoctor} not found");
-
-                var markup = await context.markups.FindAsync(request.IdMarkup);
-                if (markup == null)
-                    return BadRequest($"Markup with ID {request.IdMarkup} not found");
-
-                // Создание записи
-                var record = new Record
+            var records = await context.records
+                .Where(r => r.IdDoctor == doctorId)
+                .OrderByDescending(r => r.SignalUploadedAt)
+                .Take(15) 
+                .Select(r => new
                 {
-                    IdDoctor = request.IdDoctor,
-                    RC = request.RC,
-                    Type = request.Type,
-                    IdMarkup = request.IdMarkup,
-                    SignalObjectName = "",
-                    SignalFileSize = 0,
-                    SignalOriginalFileName = "",
-                    SignalUploadedAt = DateTime.UtcNow
-                };
+                    recordId = r.IdRecord,
+                    type = r.Type,
+                    uploadedAt = r.SignalUploadedAt,
+                    fileSize = r.SignalFileSize,
+                    originalFileName = r.SignalOriginalFileName
+                })
+                .ToListAsync();
 
-                context.records.Add(record);
-                await context.SaveChangesAsync();
-
-                // Загрузка файла в MinIO
-                using var stream = new MemoryStream();
-                await file.CopyToAsync(stream);
-                var npyData = stream.ToArray();
-
-                var objectName = await npyFileService.SaveNpyDataAsync(npyData, file.FileName);
-
-                // Обновление записи с информацией о файле
-                record.SignalObjectName = objectName;
-                record.SignalFileSize = file.Length;
-                record.SignalOriginalFileName = file.FileName;
-                record.SignalUploadedAt = DateTime.UtcNow;
-
-                await context.SaveChangesAsync();
-
-                logger.LogInformation("Record created and NPY file uploaded with ID: {RecordId}", record.IdRecord);
-
-                return Ok(new
-                {
-                    RecordId = record.IdRecord,
-                    ObjectName = objectName,
-                    FileSize = file.Length,
-                    OriginalFileName = file.FileName,
-                    Message = $"Record created successfully with ID: {record.IdRecord}"
-                });
-            }
-            catch (Exception ex)
-            {
-                logger.LogError(ex, "Error creating record and uploading file");
-                return StatusCode(500, "Error creating record and uploading file");
-            }
-        }*/
+            return Ok(records);
+        }
     }
 }

@@ -46,3 +46,5 @@ Migrations/*.resx
 
 # Файлы миграций (если они генерируются автоматически)
 # DataAccess/Migrations/
+
+BlazorApp/

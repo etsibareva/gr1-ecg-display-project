@@ -1,0 +1,374 @@
+﻿@page "/ecg-viewer"
+@inject HttpClient Http
+@inject NavigationManager Navigation
+@inject NotificationService NotificationService
+@inject IJSRuntime JSRuntime
+
+<div style="display: grid; grid-template-columns: 1fr 300px; grid-template-rows: auto 1fr; gap: 15px; height: 100vh; padding: 15px;">
+
+    <!-- Шапка с кнопкой аккаунта -->
+    <div style="grid-column: 1; grid-row: 1;">
+        <RadzenCard>
+            <ChildContent>
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <RadzenText Style="font-size: 24px; font-weight: bold;">📊 Просмотр ЭКГ</RadzenText>
+                    <RadzenButton Click="GoToDoctor" Icon="account_circle" Text="Аккаунт" 
+                                  ButtonStyle="ButtonStyle.Primary" />
+                </div>
+            </ChildContent>
+        </RadzenCard>
+    </div>
+
+    <!-- Основной график ЭКГ (слева, на всю высоту) -->
+    <div style="grid-column: 1; grid-row: 2;">
+        <RadzenCard Style="height: 100%;">
+            <ChildContent>
+                <RadzenText Style="font-size: 18px; font-weight: bold; margin-bottom: 15px;">
+                    @(currentRecord != null ? $"ЭКГ запись #{currentRecord.recordId}" : "Выберите запись ЭКГ")
+                </RadzenText>
+                
+                @if (currentRecord != null && npyValues != null)
+                {
+                    <!-- Контейнер с графиком -->
+                    <div style="position: relative; height: calc(100% - 60px); border: 1px solid #ccc; background: white; overflow: hidden;
+                                background-image: 
+                                    linear-gradient(90deg, #ff4444 1px, transparent 1px),
+                                    linear-gradient(90deg, #ffcccc 1px, transparent 1px),
+                                    linear-gradient(0deg, #4444ff 1px, transparent 1px),
+                                    linear-gradient(0deg, #ccccff 1px, transparent 1px);
+                                background-size: 
+                                    100px 100%,
+                                    20px 100%,
+                                    100% 100px,
+                                    100% 20px;">
+                        
+                        <div style="position: absolute; top: 0; left: 0; right: 0; bottom: 0;">
+                            <RadzenChart Style="height: 100%; background: transparent;">
+                                <RadzenLineSeries Data="@chartData" 
+                                                  CategoryProperty="Time" 
+                                                  ValueProperty="Value"
+                                                  LineType="LineType.Solid">
+                                    <SeriesAppearance Stroke="rgb(0, 100, 0)" StrokeWidth="2" />
+                                </RadzenLineSeries>
+                                <CategoryAxis Property="Time" FormatString="F1" />
+                                <ValueAxis Property="Value" />
+                            </RadzenChart>
+                        </div>
+
+                        <!-- Подписи осей -->
+                        <div style="position: absolute; bottom: 5px; left: 50%; transform: translateX(-50%); 
+                                    font-size: 12px; color: #666; background: white; padding: 0 10px;">
+                            Время (секунды)
+                        </div>
+                        <div style="position: absolute; top: 50%; left: 5px; transform: translateY(-50%) rotate(-90deg); 
+                                    font-size: 12px; color: #666; background: white; padding: 0 10px;">
+                            Амплитуда (мВ)
+                        </div>
+                    </div>
+                }
+                else
+                {
+                    <div style="height: calc(100% - 60px); display: flex; align-items: center; justify-content: center; color: #666;">
+                        <div style="text-align: center;">
+                            <RadzenIcon Icon="monitor_heart" Style="font-size: 64px; margin-bottom: 15px; opacity: 0.5;" />
+                            <RadzenText Style="display: block; font-size: 16px;">Выберите запись ЭКГ из списка</RadzenText>
+                        </div>
+                    </div>
+                }
+            </ChildContent>
+        </RadzenCard>
+    </div>
+
+    <!-- Параметры (справа сверху) -->
+    <div style="grid-column: 2; grid-row: 1;">
+        <RadzenCard Style="height: 100%;">
+            <ChildContent>
+                <RadzenText Style="font-size: 16px; font-weight: bold; margin-bottom: 15px;">📈 Параметры записи</RadzenText>
+                
+                @if (currentRecord != null)
+                {
+                    <div style="display: flex; align-items: center; gap: 8px; padding: 6px 0; border-bottom: 1px solid #f0f0f0;">
+                        <RadzenIcon Icon="fingerprint" Style="color: #007bff; width: 16px;" />
+                        <div style="flex: 1;">
+                            <div style="font-size: 12px; color: #666;">ID записи</div>
+                            <div style="font-weight: 500; color: #333;">@currentRecord.recordId</div>
+                        </div>
+                    </div>
+
+                    <div style="display: flex; align-items: center; gap: 8px; padding: 6px 0; border-bottom: 1px solid #f0f0f0;">
+                        <RadzenIcon Icon="schedule" Style="color: #007bff; width: 16px;" />
+                        <div style="flex: 1;">
+                            <div style="font-size: 12px; color: #666;">Длительность</div>
+                            <div style="font-weight: 500; color: #333;">@($"{signalDuration:F2} сек")</div>
+                        </div>
+                    </div>
+
+                    <div style="display: flex; align-items: center; gap: 8px; padding: 6px 0; border-bottom: 1px solid #f0f0f0;">
+                        <RadzenIcon Icon="speed" Style="color: #007bff; width: 16px;" />
+                        <div style="flex: 1;">
+                            <div style="font-size: 12px; color: #666;">Частота дискретизации</div>
+                            <div style="font-weight: 500; color: #333;">@($"{currentRecord.samplingRate} Гц")</div>
+                        </div>
+                    </div>
+
+                    <div style="display: flex; align-items: center; gap: 8px; padding: 6px 0; border-bottom: 1px solid #f0f0f0;">
+                        <RadzenIcon Icon="trending_up" Style="color: #007bff; width: 16px;" />
+                        <div style="flex: 1;">
+                            <div style="font-size: 12px; color: #666;">Точек данных</div>
+                            <div style="font-weight: 500; color: #333;">@npyValues?.Length.ToString("N0")</div>
+                        </div>
+                    </div>
+
+                    <div style="display: flex; align-items: center; gap: 8px; padding: 6px 0; border-bottom: 1px solid #f0f0f0;">
+                        <RadzenIcon Icon="functions" Style="color: #007bff; width: 16px;" />
+                        <div style="flex: 1;">
+                            <div style="font-size: 12px; color: #666;">Диапазон амплитуд</div>
+                            <div style="font-weight: 500; color: #333;">@($"{npyValues?.Min():F3} до {npyValues?.Max():F3}")</div>
+                        </div>
+                    </div>
+
+                    <div style="display: flex; align-items: center; gap: 8px; padding: 6px 0;">
+                        <RadzenIcon Icon="calendar_today" Style="color: #007bff; width: 16px;" />
+                        <div style="flex: 1;">
+                            <div style="font-size: 12px; color: #666;">Дата загрузки</div>
+                            <div style="font-weight: 500; color: #333;">@currentRecord.uploadedAt?.ToString("dd.MM.yyyy HH:mm")</div>
+                        </div>
+                    </div>
+                }
+                else
+                {
+                    <div style="text-align: center; color: #666; padding: 20px 0;">
+                        <RadzenIcon Icon="info" Style="font-size: 32px; margin-bottom: 10px; opacity: 0.5;" />
+                        <RadzenText Style="display: block; font-size: 14px;">Нет активной записи</RadzenText>
+                    </div>
+                }
+            </ChildContent>
+        </RadzenCard>
+    </div>
+
+    <!-- Список записей (справа снизу) -->
+    <div style="grid-column: 2; grid-row: 2;">
+        <RadzenCard Style="height: 100%; overflow: hidden;">
+            <ChildContent>
+                <RadzenStack Gap="10px" Style="height: 100%;">
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                        <RadzenText Style="font-size: 16px; font-weight: bold;">📋 Доступные записи</RadzenText>
+                        <RadzenButton Click="LoadDoctorRecords" Icon="refresh" Size="ButtonSize.Small" 
+                                      ButtonStyle="ButtonStyle.Secondary" />
+                    </div>
+                    
+                    <div style="flex: 1; overflow-y: auto;">
+                        @if (doctorRecords?.Any() == true)
+                        {
+                            @foreach (var record in doctorRecords)
+                            {
+                                <RadzenCard Style="@GetRecordCardStyle(record)"
+                                            @onclick="() => LoadRecord(record.recordId)">
+                                    <ChildContent>
+                                        <RadzenStack Gap="2px">
+                                            <div style="font-weight: bold; font-size: 14px;">ЭКГ #@record.recordId</div>
+                                            <div style="font-size: 11px; color: #666;">@record.uploadedAt?.ToString("dd.MM.yyyy HH:mm")</div>
+                                            <div style="font-size: 11px; color: #666;">@FormatFileSize(record.fileSize)</div>
+                                        </RadzenStack>
+                                    </ChildContent>
+                                </RadzenCard>
+                            }
+                        }
+                        else
+                        {
+                            <div style="text-align: center; color: #666; padding: 40px 0;">
+                                <RadzenIcon Icon="inbox" Style="font-size: 48px; margin-bottom: 15px; opacity: 0.5;" />
+                                <RadzenText Style="display: block;">Записей не найдено</RadzenText>
+                            </div>
+                        }
+                    </div>
+                </RadzenStack>
+            </ChildContent>
+        </RadzenCard>
+    </div>
+
+</div>
+
+@code {
+    private List<RecordInfo> doctorRecords = new();
+    private RecordInfo? currentRecord;
+    private double[]? npyValues;
+    private int currentDoctorId;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadCurrentDoctor();
+        await LoadDoctorRecords();
+    }
+
+    private async Task LoadCurrentDoctor()
+    {
+        try
+        {
+            var token = await JSRuntime.InvokeAsync<string>("localStorage.getItem", "authToken");
+            if (string.IsNullOrEmpty(token))
+            {
+                Console.WriteLine("No token found");
+                return;
+            }
+
+            Http.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
+            var response = await Http.GetAsync("api/auth/me");
+
+            Console.WriteLine($"Auth me response status: {response.StatusCode}");
+
+            if (response.IsSuccessStatusCode)
+            {
+                var json = await response.Content.ReadAsStringAsync();
+                Console.WriteLine($"Auth me response: {json}");
+
+                var doctor = await response.Content.ReadFromJsonAsync<DoctorInfo>();
+                currentDoctorId = doctor?.idDoctor ?? 0;
+                Console.WriteLine($"Current doctor ID: {currentDoctorId}");
+            }
+            else
+            {
+                Console.WriteLine($"Auth failed: {response.StatusCode}");
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error loading doctor: {ex.Message}");
+            NotificationService.Notify(NotificationSeverity.Error, "Ошибка", "Не удалось загрузить данные врача");
+        }
+    }
+
+    private async Task LoadDoctorRecords()
+    {
+        try
+        {
+            var response = await Http.GetAsync($"api/npyfiles/doctor-records/{currentDoctorId}");
+            if (response.IsSuccessStatusCode)
+            {
+                doctorRecords = await response.Content.ReadFromJsonAsync<List<RecordInfo>>() ?? new List<RecordInfo>();
+            }
+            else
+            {
+                NotificationService.Notify(NotificationSeverity.Warning, "Внимание", "Не удалось загрузить список записей");
+            }
+        }
+        catch (Exception ex)
+        {
+            NotificationService.Notify(NotificationSeverity.Error, "Ошибка", "Ошибка при загрузке списка записей");
+        }
+    }
+
+    private async Task LoadRecord(int recordId)
+    {
+        try
+        {
+            // Загрузка информации о записи
+            var infoResponse = await Http.GetAsync($"api/npyfiles/info/{recordId}");
+            if (infoResponse.IsSuccessStatusCode)
+            {
+                var result = await infoResponse.Content.ReadFromJsonAsync<RecordInfoResponse>();
+                currentRecord = new RecordInfo
+                {
+                    recordId = result.RecordId,
+                    hasNpyFile = result.HasNpyFile,
+                    originalFileName = result.OriginalFileName,
+                    fileSize = result.FileSize,
+                    uploadedAt = result.UploadedAt,
+                    samplingRate = result.SamplingRate,
+                    rc = result.RC,
+                    type = result.Type
+                };
+
+                // Загрузка данных ЭКГ
+                var dataResponse = await Http.GetAsync($"api/npyfiles/download/{recordId}");
+                if (dataResponse.IsSuccessStatusCode)
+                {
+                    var npyBytes = await dataResponse.Content.ReadAsByteArrayAsync();
+                    var ndarray = NumSharp.np.Load<double[]>(npyBytes);
+                    npyValues = ndarray.ToArray<double>();
+
+                    NotificationService.Notify(NotificationSeverity.Success, "Успех", $"Загружена запись #{recordId}");
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            NotificationService.Notify(NotificationSeverity.Error, "Ошибка", $"Не удалось загрузить запись: {ex.Message}");
+        }
+    }
+
+    private string GetRecordCardStyle(RecordInfo record)
+    {
+        var borderColor = record.recordId == currentRecord?.recordId ? "#28a745" : "#007bff";
+        return $"cursor: pointer; margin-bottom: 8px; border-left: 3px solid {borderColor};";
+    }
+
+    private void GoToDoctor()
+    {
+        Navigation.NavigateTo("/doctor");
+    }
+
+    private string FormatFileSize(long bytes)
+    {
+        string[] sizes = { "B", "KB", "MB", "GB" };
+        int order = 0;
+        double len = bytes;
+        while (len >= 1024 && order < sizes.Length - 1)
+        {
+            order++;
+            len /= 1024;
+        }
+        return $"{len:0.##} {sizes[order]}";
+    }
+
+    private double signalDuration => npyValues != null && currentRecord != null ? npyValues.Length / (double)currentRecord.samplingRate : 0;
+
+    private List<ChartPoint> chartData => npyValues != null && currentRecord != null
+        ? npyValues.Select((v, i) => new ChartPoint 
+            { 
+                Time = i / (double)currentRecord.samplingRate,
+                Value = v 
+            }).Take(2000).ToList()
+        : new List<ChartPoint>();
+
+    // Модели данных
+    public class DoctorInfo
+    {
+        public int idDoctor { get; set; }
+        public string FirstName { get; set; } = "";
+        public string LastName { get; set; } = "";
+        public string Patronym { get; set; } = "";
+        public string Email { get; set; } = "";
+        public string Login { get; set; } = "";
+    }
+
+    public class ChartPoint
+    {
+        public double Time { get; set; }
+        public double Value { get; set; }
+    }
+
+    public class RecordInfoResponse
+    {
+        public int RecordId { get; set; }
+        public bool HasNpyFile { get; set; }
+        public string? OriginalFileName { get; set; }
+        public long FileSize { get; set; }
+        public DateTime? UploadedAt { get; set; }
+        public int SamplingRate { get; set; }
+        public int RC { get; set; }
+        public int Type { get; set; }
+    }
+
+    public class RecordInfo
+    {
+        public int recordId { get; set; }
+        public bool hasNpyFile { get; set; }
+        public string? originalFileName { get; set; }
+        public long fileSize { get; set; }
+        public DateTime? uploadedAt { get; set; }
+        public int samplingRate { get; set; }
+        public int rc { get; set; }
+        public int type { get; set; }
+    }
+}
