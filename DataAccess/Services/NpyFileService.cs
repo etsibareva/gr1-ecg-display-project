@@ -21,6 +21,8 @@ namespace DataAccess.Services
         public string AccessKey { get; set; } = string.Empty;
         public string SecretKey { get; set; } = string.Empty;
         public bool WithSSL { get; set; }
+
+        /* (!) Избавиться от значения по умолчанию (!) */
         public string BucketName { get; set; } = "signals";
     }
 
@@ -33,6 +35,7 @@ namespace DataAccess.Services
 
         public NpyFileService(IOptions<MinioOptions> minioOptions, ILogger<NpyFileService> _logger)
         {
+            /* (!) Избавиться от всех значений по умолчанию. Тестировать. (!) */
             var endpoint = Environment.GetEnvironmentVariable("MINIO_ENDPOINT") ?? "localhost:9000";
             
             var accessKey = Environment.GetEnvironmentVariable("MINIO_ACCESS_KEY")
@@ -42,6 +45,7 @@ namespace DataAccess.Services
                 ?? throw new ArgumentNullException("MINIO_SECRET_KEY not set");
             
             bucketName = Environment.GetEnvironmentVariable("MINIO_BUCKET_NAME") ?? "signals";
+            /* (!) */
 
             minioClient = new MinioClient()
                 .WithEndpoint(endpoint)
@@ -68,6 +72,7 @@ namespace DataAccess.Services
             }
         }
 
+        /* Загрузка файла NPY в виде массива байт */
         public async Task<string> SaveNpyDataAsync(byte[] npyData, string fileName)
         {
             try
@@ -94,6 +99,7 @@ namespace DataAccess.Services
             }
         }
 
+        /* Получение файла NPY в виде массива байт */
         public async Task<byte[]> LoadNpyDataAsync(string objectName)
         {
             try
@@ -117,7 +123,7 @@ namespace DataAccess.Services
             }
         }
 
-        // возврат ссылки на скачивание
+        /* Возврат ссылки на скачивание */
         public async Task<string> GetNpyFileUrlAsync(string objectName, int expiryMinutes = 60)
         {
             try
@@ -137,6 +143,7 @@ namespace DataAccess.Services
             }
         }
 
+        /* Удаление записи в MinIO */
         public async Task<bool> DeleteNpyDataAsync(string objectName)
         {
             try

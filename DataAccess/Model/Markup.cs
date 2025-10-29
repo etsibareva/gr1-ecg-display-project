@@ -13,6 +13,7 @@ namespace DataAccess.Model
         [Required]
         public int IdMarkup { get; set; }
 
+        /* Сменить на хранилище MinIO */
         [Required]
         public string JsonData { get; set; } = string.Empty;
 

@@ -28,6 +28,7 @@ namespace DataAccess.Model
         [Column(TypeName = "timestamp with time zone")]
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
+        /* Признак "отозван" */
         [Required]
         public bool IsRevoked { get; set; }
 

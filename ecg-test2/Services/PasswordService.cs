@@ -2,12 +2,13 @@
 
 using DataAccess.Model;
 
-namespace ecg_test2.Services
+namespace WebApi.Services
 {
     public class PasswordService
     {
         private readonly PasswordHasher<Doctor> passwordHasher = new PasswordHasher<Doctor>();
 
+        /* (!) Ввести использование SALT для хеширования паролей (!) */
         public string HashPassword(string password)
         {
             return passwordHasher.HashPassword(null, password);

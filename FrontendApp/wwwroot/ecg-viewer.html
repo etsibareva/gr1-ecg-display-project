@@ -1,0 +1,104 @@
+﻿<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Просмотр ЭКГ</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <div class="ecg-container">
+        <!-- Навигация -->
+        <div class="ecg-nav">
+            <button class="nav-btn switch-btn" onclick="window.location.href='profile.html'">
+                Личный кабинет
+            </button>
+            <button class="nav-btn logout-btn" onclick="handleLogout()">
+                Выйти
+            </button>
+        </div>
+
+        <!-- 12 графиков - ЛЕВАЯ КОЛОНКА: I, II, III, aVR, aVL, aVF | ПРАВАЯ КОЛОНКА: V1-V6 -->
+        <div class="graphs-section">
+            <!-- Левая колонка: стандартные отведения -->
+            <div class="graph-container" style="grid-column: 1; grid-row: 1;">
+                <div class="graph-title">I</div>
+                <div class="graph-placeholder">I</div>
+            </div>
+            <div class="graph-container" style="grid-column: 1; grid-row: 2;">
+                <div class="graph-title">II</div>
+                <div class="graph-placeholder">II</div>
+            </div>
+            <div class="graph-container" style="grid-column: 1; grid-row: 3;">
+                <div class="graph-title">III</div>
+                <div class="graph-placeholder">III</div>
+            </div>
+            <div class="graph-container" style="grid-column: 1; grid-row: 4;">
+                <div class="graph-title">aVR</div>
+                <div class="graph-placeholder">aVR</div>
+            </div>
+            <div class="graph-container" style="grid-column: 1; grid-row: 5;">
+                <div class="graph-title">aVL</div>
+                <div class="graph-placeholder">aVL</div>
+            </div>
+            <div class="graph-container" style="grid-column: 1; grid-row: 6;">
+                <div class="graph-title">aVF</div>
+                <div class="graph-placeholder">aVF</div>
+            </div>
+
+            <!-- Правая колонка: грудные отведения V1-V6 ДРУГ ПОД ДРУГОМ -->
+            <div class="graph-container" style="grid-column: 2; grid-row: 1;">
+                <div class="graph-title">V1</div>
+                <div class="graph-placeholder">V1</div>
+            </div>
+            <div class="graph-container" style="grid-column: 2; grid-row: 2;">
+                <div class="graph-title">V2</div>
+                <div class="graph-placeholder">V2</div>
+            </div>
+            <div class="graph-container" style="grid-column: 2; grid-row: 3;">
+                <div class="graph-title">V3</div>
+                <div class="graph-placeholder">V3</div>
+            </div>
+            <div class="graph-container" style="grid-column: 2; grid-row: 4;">
+                <div class="graph-title">V4</div>
+                <div class="graph-placeholder">V4</div>
+            </div>
+            <div class="graph-container" style="grid-column: 2; grid-row: 5;">
+                <div class="graph-title">V5</div>
+                <div class="graph-placeholder">V5</div>
+            </div>
+            <div class="graph-container" style="grid-column: 2; grid-row: 6;">
+                <div class="graph-title">V6</div>
+                <div class="graph-placeholder">V6</div>
+            </div>
+        </div>
+
+        <!-- Правая часть - 1/5 экрана -->
+        <div class="sidebar">
+            <div class="params-section">
+                <div class="main-container">
+                    <h4>Параметры</h4>
+                    <div id="paramsData">
+                        <div class="no-data">Нет записи</div>
+                    </div>
+                </div>
+            </div>
+            <div class="records-section">
+                <div class="main-container">
+                    <div class="records-header">
+                        <h4>Записи</h4>
+                        <button class="refresh-btn" onclick="loadDoctorRecords()">↻</button>
+                    </div>
+                    <div class="records-list" id="recordsList">
+                        <div class="no-data">Загрузка...</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="/lib/d3/d3.v7.min.js"></script>
+    <script src="js/auth.js"></script>
+    <script src="js/ecg-viewer.js"></script>
+</body>
+</html>

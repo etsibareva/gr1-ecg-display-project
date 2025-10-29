@@ -25,6 +25,7 @@ namespace DataAccess.Model
         [Required]
         public string Password { get; set; }
 
+        /* Почтовый адрес. Предполагается наличие НЕ в качестве идентификатора. */
         [EmailAddress]
         public string Email { get; set; }
 

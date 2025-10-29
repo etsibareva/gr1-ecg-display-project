@@ -10,7 +10,10 @@ using System.Security.Claims;
 using System.Security.Cryptography;
 using System.Text;
 
-namespace ecg_test2.Services
+/* (!) Четко определить, достаточно ли данного хеширования (для передачи, для хранения) refresh-токенов (!) */
+/* (!) Если нет, ввести алгоритм SALT (!) */
+
+namespace WebApi.Services
 {
     public class RefreshTokenService
     {
@@ -27,6 +30,7 @@ namespace ecg_test2.Services
             refreshTokenExpiryDays = int.Parse(jwtConfig["RefreshExpiryDays"]);
         }
 
+        /* Создание */
         public async Task<string> GenerateRefreshTokenAsync(int idDoctor)
         {
             var randomBytes = new byte[16];
@@ -51,6 +55,7 @@ namespace ecg_test2.Services
             return refreshToken;
         }
 
+        /* Проверка */
         public async Task<RefreshToken> VerifyRefreshTokenAsync(string token)
         {
             var tokenHash = HashToken(token);
@@ -65,6 +70,7 @@ namespace ecg_test2.Services
             return refreshToken;
         }
 
+        /* Отзыв */
         public async Task RevokeRefreshTokensAsync(int userId)
         {
             var activeTokens = await context.refreshTokens
@@ -79,6 +85,9 @@ namespace ecg_test2.Services
             await context.SaveChangesAsync();
         }
 
+        /* Очистка отозванных */
+        /* (!) Проблема 1: не вызывается автоматически (!) */
+        /* (?) Проблема 2: не чистит БД или чистит (?) */
         public async Task CleanExpiredTokensAsync()
         {
             var expiredTokens = await context.refreshTokens

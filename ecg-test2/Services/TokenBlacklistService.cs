@@ -3,7 +3,10 @@ using Microsoft.Extensions.Caching.Distributed;
 using System.Security.Cryptography;
 using System.Text;
 
-namespace ecg_test2.Services
+/* (!) Неясно, запускается ли вообще (!) */
+/* (!) Есть зависание запуска при многократном использовании (!) */
+
+namespace WebApi.Services
 {
     public class TokenBlacklistService
     {

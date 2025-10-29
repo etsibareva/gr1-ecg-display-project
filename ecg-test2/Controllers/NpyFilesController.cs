@@ -4,8 +4,13 @@ using DataAccess.Services;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using NumSharp;
+using NumSharp.Backends.Unmanaged;
+using System;
+using static System.Net.WebRequestMethods;
+using static System.Runtime.InteropServices.JavaScript.JSType;
 
-namespace ecg_test2.Controllers
+namespace WebApi.Controllers
 {
     public class CreateRecordRequest
     {
@@ -75,7 +80,8 @@ namespace ecg_test2.Controllers
             }
         }
 
-        // сохранение record Postgres (без существования записи невозможно)
+        /* Сохранение записи Record в Postgres (без существования записи невозможно сохранения NPY в MinIO) */
+        /* (!) Требуется админский скрипт для последовательного create-record + upload при загрузке NPY. (!) */
         [HttpPost("create-record")]
         public async Task<IActionResult> CreateRecord([FromBody] CreateRecordRequest request)
         {
@@ -164,6 +170,7 @@ namespace ecg_test2.Controllers
 
             return Ok(new
             {
+                /* (?) Убрать не используемые поля (?) */
                 RecordId = recordId,
                 HasNpyFile = hasFile,
                 ObjectName = record.SignalObjectName,
@@ -207,10 +214,6 @@ namespace ecg_test2.Controllers
                 var success = await npyFileService.DeleteNpyDataAsync(record.SignalObjectName);
                 if (success)
                 {
-                    //record.SignalObjectName = string.Empty;
-                    //record.SignalFileSize = 0;
-                    //record.SignalOriginalFileName = string.Empty;
-
                     context.records.Remove(record);
                     await context.SaveChangesAsync();
 
@@ -218,7 +221,7 @@ namespace ecg_test2.Controllers
                 }
 
                 return success ? Ok(new { Message = "NPY file deleted successfully" })
-                              : StatusCode(500, "Error deleting NPY file");
+                               : StatusCode(500, "Error deleting NPY file");
             }
             catch (Exception ex)
             {
@@ -245,6 +248,64 @@ namespace ecg_test2.Controllers
                 .ToListAsync();
 
             return Ok(records);
+        }
+
+        [HttpGet("ecg-data/{recordId}")]
+        public async Task<ActionResult<EcgDataResponse>> GetEcgData(int recordId)
+        {
+            try
+            {
+                var record = await context.records.FindAsync(recordId);
+                if (record == null || string.IsNullOrEmpty(record.SignalObjectName))
+                    return NotFound("Record or NPY file not found");
+
+                var npyBytes = await npyFileService.LoadNpyDataAsync(record.SignalObjectName);
+
+                if (npyBytes == null || npyBytes.Length == 0)
+                    return BadRequest("NPY file is empty");
+
+                // Парсим как ДВУМЕРНЫЙ массив short[,]
+                var array2D = NumSharp.np.Load<short[,]>(npyBytes);
+
+                if (array2D == null)
+                    return BadRequest("Failed to parse NPY file");
+
+                int rows = array2D.GetLength(0);
+                int cols = array2D.GetLength(1);
+
+                // Преобразуем short[,] в double[][]
+                var ecgData = new double[rows][];
+                for (int i = 0; i < rows; i++)
+                {
+                    ecgData[i] = new double[cols];
+                    for (int j = 0; j < cols; j++)
+                    {
+                        ecgData[i][j] = array2D[i, j]/1000.0;
+                    }
+                }
+
+                var response = new EcgDataResponse
+                {
+                    RecordId = recordId,
+                    SamplingRate = record.Type switch { 1 => 500, 2 => 1000, 3 => 200, _ => 500 },
+                    Channels = ecgData,
+                    ChannelNames = new[] { "I", "II", "III", "aVR", "aVL", "aVF", "V1", "V2", "V3", "V4", "V5", "V6" }
+                };
+
+                return Ok(response);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, $"Error parsing ECG data: {ex.Message}");
+            }
+        }
+        
+        public class EcgDataResponse
+        {
+            public int RecordId { get; set; }
+            public int SamplingRate { get; set; }
+            public string[] ChannelNames { get; set; }
+            public double[][] Channels { get; set; } // [12][5000]
         }
     }
 }

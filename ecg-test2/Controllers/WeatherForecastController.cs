@@ -1,6 +1,8 @@
+/* (!) Удалить WeatherForecast из всего решения (!) */
+
 using Microsoft.AspNetCore.Mvc;
 
-namespace ecg_test2.Controllers
+namespace WebApi.Controllers
 {
     [ApiController]
     [Route("[controller]")]

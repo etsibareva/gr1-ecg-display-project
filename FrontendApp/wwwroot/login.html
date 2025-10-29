@@ -1,0 +1,38 @@
+﻿<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Вход в систему ЭКГ</title>
+    <link rel="stylesheet" href="css/Style.css">
+</head>
+<body>
+    <div class="login-container">
+        <div class="login-card">
+            <h1> Вход в систему</h1>
+
+            <form id="loginForm">
+                <div class="input-group">
+                    <label for="login">Логин</label>
+                    <input type="text" id="login" name="login" required>
+                </div>
+
+                <div class="input-group">
+                    <label for="password">Пароль</label>
+                    <input type="password" id="password" name="password" required>
+                </div>
+
+                <button type="submit" class="login-btn">Войти</button>
+            </form>
+
+            <div class="register-link">
+                Нет аккаунта? <a href="register.html">Зарегистрироваться</a>
+            </div>
+
+            <div id="errorMessage" class="error-message"></div>
+        </div>
+    </div>
+
+    <script src="js/auth.js"></script>
+</body>
+</html>

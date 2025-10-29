@@ -18,6 +18,7 @@ namespace DataAccess.Data
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
+            /* Таблица Refresh-токенов */
             modelBuilder.Entity<RefreshToken>(entity =>
             {
                 entity.HasKey(rt => rt.IdRefreshToken);
@@ -28,26 +29,30 @@ namespace DataAccess.Data
                       .OnDelete(DeleteBehavior.Cascade);
             });
 
+            /* Таблица врачей */
             modelBuilder.Entity<Doctor>(entity =>
             {
                 entity.HasKey(u => u.IdDoctor);
                 entity.HasIndex(u => u.Email).IsUnique();
             });
 
-             modelBuilder.Entity<Markup>(entity =>
+            /* Таблица разметок */
+            /* (!) JSON перевести в ещё одно хранилище MinIO (!) */
+            modelBuilder.Entity<Markup>(entity =>
              {
                  entity.HasKey(m => m.IdMarkup);
                  entity.Property(m => m.JsonData)
                        .IsRequired()
                        .HasColumnType("jsonb");
 
-                 // ещё индексы для скорости поиска (?)
+                 /* (?) ещё индексы для скорости поиска (?) */
 
                  // GIN индекс для быстрого поиска по JSON
                  entity.HasIndex(m => m.JsonData)
                        .HasMethod("GIN");
              });
 
+            /* Таблица записей */
             modelBuilder.Entity<Record>(entity =>
             {
                 entity.HasKey(r => r.IdRecord);

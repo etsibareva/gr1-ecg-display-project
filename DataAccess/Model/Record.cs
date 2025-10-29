@@ -20,16 +20,17 @@ namespace DataAccess.Model
         [ForeignKey("IdDoctor")]
         public virtual Doctor Doctor { get; set; }
 
-        // предположено в Hz
+        /* предположено в Hz */
         public int RC { get; set; }
 
         public int Type { get; set; }
 
-        // имя файла в MinIO для NPY данных
-        public string SignalObjectName { get; set; } = string.Empty;
+        /* имя файла в MinIO для NPY данных */
+        public string SignalObjectName { get; set; }
 
         public int IdMarkup { get; set; }
 
+        /* Возможно изменение при переходе Markup на MinIO хранилище. */
         [ForeignKey("IdMarkup")]
         public virtual Markup Markup { get; set; }
 

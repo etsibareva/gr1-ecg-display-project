@@ -1,0 +1,87 @@
+﻿<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Личный кабинет</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <div class="main-container">
+        <!-- Кнопка переключения на ЭКГ - левый верхний -->
+        <button class="nav-btn switch-btn" onclick="window.location.href='ecg-viewer.html'">
+            Мои разметки
+        </button>
+
+        <!-- Кнопка выхода - правый верхний -->
+        <button class="nav-btn logout-btn" onclick="logout()">
+            Выйти
+        </button>
+
+        <h1 class="page-title"> Личный кабинет врача</h1>
+
+        <div class="profile-content">
+            <!-- Место для фото -->
+            <div class="photo-section">
+                <div class="photo-placeholder">
+                    📷
+                </div>
+                <button class="upload-btn">Загрузить фото</button>
+            </div>
+
+            <!-- Данные врача -->
+            <div class="doctor-data">
+                <div class="data-item">
+                    <label>ФИО:</label>
+                    <span id="doctorName">Загрузка...</span>
+                </div>
+                <div class="data-item">
+                    <label>Email:</label>
+                    <span id="doctorEmail">Загрузка...</span>
+                </div>
+                <div class="data-item">
+                    <label>Логин:</label>
+                    <span id="doctorLogin">Загрузка...</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="js/auth.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', async function () {
+            console.log('📄 Profile page loaded');
+
+            // Проверяем авторизацию
+            if (!authService.isAuthenticated()) {
+                console.log('Not authenticated, redirecting to login...');
+                authService.redirectToLogin();
+                return;
+            }
+
+            // Загружаем данные пользователя
+            const user = await authService.getCurrentUser();
+            if (user) {
+                // Форматируем ФИО
+                const fullName = `${user.lastName} ${user.firstName} ${user.patronym || ''}`.trim();
+
+                // Заполняем данные
+                document.getElementById('doctorName').textContent = fullName;
+                document.getElementById('doctorEmail').textContent = user.email;
+                document.getElementById('doctorLogin').textContent = user.login;
+            } else {
+                console.log('Failed to load user data');
+                document.getElementById('doctorName').textContent = 'Ошибка загрузки';
+                document.getElementById('doctorEmail').textContent = 'Ошибка загрузки';
+                document.getElementById('doctorLogin').textContent = 'Ошибка загрузки';
+            }
+        });
+
+        async function logout() {
+            if (confirm('Вы уверены, что хотите выйти?')) {
+                await authService.logout();
+            }
+        }
+    </script>
+</body>
+</html>

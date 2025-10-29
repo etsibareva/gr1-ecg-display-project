@@ -1,4 +1,9 @@
-﻿namespace ecg_test2.Services
+﻿/* (!) Неясно, запускается ли вообще (!) */
+/* (?) Работает с Access или Refresh? (?) 
+ * по идее, с access
+ */
+
+namespace WebApi.Services
 {
     public class TokenBlackListMiddlewareService
     {
@@ -11,6 +16,7 @@
 
         public async Task InvokeAsync(HttpContext context, TokenBlacklistService blacklistService)
         {
+            /* (?) Оставляется явное указание каталогов (?) */
             if (context.Request.Path.StartsWithSegments("/api/auth/login") ||
                 context.Request.Path.StartsWithSegments("/api/auth/register") ||
                 context.Request.Path.StartsWithSegments("/api/auth/refresh"))

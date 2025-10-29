@@ -6,7 +6,7 @@ using DataAccess.Model;
 using System.IdentityModel.Tokens.Jwt;
 using Microsoft.IdentityModel.Tokens;
 
-namespace ecg_test2.Services
+namespace WebApi.Services
 {
     public class JwtService
     {
@@ -23,23 +23,20 @@ namespace ecg_test2.Services
             return GenerateToken(doctor);
         }
 
-        /*public string GenerateRefreshToken(Doctor doctor)
-        {
-            return GenerateToken(doctor, false);
-        }*/
+        /* 
+         * (?) Ранее GenerateToken работала и для создания Refresh-токенов,
+         *     однако я отказалась от шифрования и оставила только их хеширование 
+         * (?) 
+         */
 
-        //private string GenerateToken(Doctor doctor, bool isAccessToken)
+        /* (!) Для Refresh-токенов SALT для хеширования ввести (!) */
+
+        /* (!) Привести к одному формату либо четко определить: что находится в конфигурации, что в ENV. (!) */
         private string GenerateToken(Doctor doctor)
         {
             var jwtConfig = configuration.GetSection("Jwt");
-            //var secret = isAccessToken ? jwtConfig["AccessSecret"] : jwtConfig["RefreshSecret"];
 
             var secret = Environment.GetEnvironmentVariable("JWT_SECRET"); 
-            /*var expiryMinutes = isAccessToken ?
-                int.Parse(jwtConfig["AccessExpiryMinutes"]) :
-                int.Parse(jwtConfig["RefreshExpiryDays"]) * 24 * 60;
-            */
-
             var expiryMinutes = int.Parse(jwtConfig["AccessExpiryMinutes"]);
 
             var key = Encoding.ASCII.GetBytes(secret);
@@ -52,7 +49,6 @@ namespace ecg_test2.Services
                 new Claim(ClaimTypes.NameIdentifier, doctor.IdDoctor.ToString()),
                 new Claim(ClaimTypes.Name, doctor.Login),
                 new Claim(ClaimTypes.Email, doctor.Email),
-                //new Claim("token_type", isAccessToken ? "access" : "refresh")
                 new Claim("token_type", "access")
             }),
                 Expires = DateTime.UtcNow.AddMinutes(expiryMinutes),

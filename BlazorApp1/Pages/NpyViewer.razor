@@ -4,7 +4,7 @@
 @inject NotificationService NotificationService
 @inject IJSRuntime JSRuntime
 
-<div style="display: grid; grid-template-columns: 1fr 300px; grid-template-rows: auto 1fr; gap: 15px; height: 100vh; padding: 15px;">
+<div style="display: grid; grid-template-columns: 1fr 300px; grid-template-rows: auto 1fr 1fr; gap: 15px; height: 100vh; padding: 15px;">
 
     <!-- Шапка с кнопкой аккаунта -->
     <div style="grid-column: 1; grid-row: 1;">
@@ -19,72 +19,83 @@
         </RadzenCard>
     </div>
 
-    <!-- Основной график ЭКГ (слева, на всю высоту) -->
+        <!-- Первый график с миллиметровой сеткой -->
     <div style="grid-column: 1; grid-row: 2;">
         <RadzenCard Style="height: 100%;">
             <ChildContent>
-                <RadzenText Style="font-size: 18px; font-weight: bold; margin-bottom: 15px;">
-                    @(currentRecord != null ? $"ЭКГ запись #{currentRecord.recordId}" : "Выберите запись ЭКГ")
+                <RadzenText Style="font-size: 16px; font-weight: bold; margin-bottom: 10px;">
+                    📏 Миллиметровая сетка (медицинский стандарт)
                 </RadzenText>
                 
                 @if (currentRecord != null && npyValues != null)
                 {
-                    <!-- Контейнер с графиком -->
-                    <div style="position: relative; height: calc(100% - 60px); border: 1px solid #ccc; background: white; overflow: hidden;
-                                background-image: 
-                                    linear-gradient(90deg, #ff4444 1px, transparent 1px),
-                                    linear-gradient(90deg, #ffcccc 1px, transparent 1px),
-                                    linear-gradient(0deg, #4444ff 1px, transparent 1px),
-                                    linear-gradient(0deg, #ccccff 1px, transparent 1px);
-                                background-size: 
-                                    100px 100%,
-                                    20px 100%,
-                                    100% 100px,
-                                    100% 20px;">
+                    <div style="position: relative; height: calc(100% - 40px); border: 1px solid #ccc; background: white; overflow: hidden;">
                         
+                        <!-- Вертикальные линии времени -->
+                        @for (int x = 0; x <= 250; x++)
+                        {
+                            <div style="position: absolute; top: 0; bottom: 0; 
+                                        left: @(x)mm; 
+                                        width: @(x % 5 == 0 ? "1px" : "0.3px"); 
+                                        background: @(x % 5 == 0 ? "#e0a0a0" : "#f0e0e0"); 
+                                        pointer-events: none;">
+                            </div>
+                        }
+
+                        <!-- Горизонтальные линии напряжения (до самого верха) -->
+                        @for (int y = 0; y <= 40; y++)
+                        {
+                            <div style="position: absolute; left: 0; right: 0; 
+                                        bottom: @(y)mm; 
+                                        height: @(y % 5 == 0 ? "1px" : "0.3px"); 
+                                        background: @(y % 5 == 0 ? "#a0a0e0" : "#e0e0f0"); 
+                                        pointer-events: none;">
+                            </div>
+                        }
+
+                        <!-- График поверх сетки -->
                         <div style="position: absolute; top: 0; left: 0; right: 0; bottom: 0;">
                             <RadzenChart Style="height: 100%; background: transparent;">
                                 <RadzenLineSeries Data="@chartData" 
                                                   CategoryProperty="Time" 
                                                   ValueProperty="Value"
                                                   LineType="LineType.Solid">
-                                    <SeriesAppearance Stroke="rgb(0, 100, 0)" StrokeWidth="2" />
+                                    <SeriesAppearance Stroke="rgb(0, 100, 0)" StrokeWidth="1.5" />
                                 </RadzenLineSeries>
-                                <CategoryAxis Property="Time" FormatString="F1" />
-                                <ValueAxis Property="Value" />
+                                <CategoryAxis FormatString="F1" />
+                                <ValueAxis Min="@minValue" Max="@maxValue" />
                             </RadzenChart>
                         </div>
 
-                        <!-- Подписи осей -->
+                        <!-- Подписи -->
                         <div style="position: absolute; bottom: 5px; left: 50%; transform: translateX(-50%); 
-                                    font-size: 12px; color: #666; background: white; padding: 0 10px;">
-                            Время (секунды)
+                                    font-size: 11px; color: #666; background: white; padding: 0 10px;">
+                            Время (25 мм/с)
                         </div>
                         <div style="position: absolute; top: 50%; left: 5px; transform: translateY(-50%) rotate(-90deg); 
-                                    font-size: 12px; color: #666; background: white; padding: 0 10px;">
-                            Амплитуда (мВ)
+                                    font-size: 11px; color: #666; background: white; padding: 0 10px;">
+                            Амплитуда (10 мм/мВ)
                         </div>
                     </div>
                 }
                 else
                 {
-                    <div style="height: calc(100% - 60px); display: flex; align-items: center; justify-content: center; color: #666;">
-                        <div style="text-align: center;">
-                            <RadzenIcon Icon="monitor_heart" Style="font-size: 64px; margin-bottom: 15px; opacity: 0.5;" />
-                            <RadzenText Style="display: block; font-size: 16px;">Выберите запись ЭКГ из списка</RadzenText>
-                        </div>
+                    <div style="height: calc(100% - 40px); display: flex; align-items: center; justify-content: center; color: #666;">
+                        <RadzenText>Выберите запись ЭКГ</RadzenText>
                     </div>
                 }
             </ChildContent>
         </RadzenCard>
     </div>
 
+    
+
     <!-- Параметры (справа сверху) -->
-    <div style="grid-column: 2; grid-row: 1;">
+    <div style="grid-column: 2; grid-row: 1; grid-row-end: span 2;">
         <RadzenCard Style="height: 100%;">
             <ChildContent>
                 <RadzenText Style="font-size: 16px; font-weight: bold; margin-bottom: 15px;">📈 Параметры записи</RadzenText>
-                
+
                 @if (currentRecord != null)
                 {
                     <div style="display: flex; align-items: center; gap: 8px; padding: 6px 0; border-bottom: 1px solid #f0f0f0;">
@@ -147,7 +158,7 @@
     </div>
 
     <!-- Список записей (справа снизу) -->
-    <div style="grid-column: 2; grid-row: 2;">
+    <div style="grid-column: 2; grid-row: 3;">
         <RadzenCard Style="height: 100%; overflow: hidden;">
             <ChildContent>
                 <RadzenStack Gap="10px" Style="height: 100%;">
@@ -195,6 +206,10 @@
     private double[]? npyValues;
     private int currentDoctorId;
 
+    private double minValue = -2.0;
+    private double maxValue = 2.0;
+    //private List<double> voltageLinePositions = new();
+
     protected override async Task OnInitializedAsync()
     {
         await LoadCurrentDoctor();
@@ -215,16 +230,12 @@
             Http.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
             var response = await Http.GetAsync("api/auth/me");
 
-            Console.WriteLine($"Auth me response status: {response.StatusCode}");
-
             if (response.IsSuccessStatusCode)
             {
                 var json = await response.Content.ReadAsStringAsync();
-                Console.WriteLine($"Auth me response: {json}");
 
                 var doctor = await response.Content.ReadFromJsonAsync<DoctorInfo>();
                 currentDoctorId = doctor?.idDoctor ?? 0;
-                Console.WriteLine($"Current doctor ID: {currentDoctorId}");
             }
             else
             {
@@ -284,8 +295,14 @@
                 if (dataResponse.IsSuccessStatusCode)
                 {
                     var npyBytes = await dataResponse.Content.ReadAsByteArrayAsync();
-                    var ndarray = NumSharp.np.Load<double[]>(npyBytes);
+                    var ndarray = NumSharp.np.Load<double[]>(npyBytes); // парсинг по 5000 
                     npyValues = ndarray.ToArray<double>();
+
+                    // Автоматическая калибровка масштаба по данным
+                    CalibrateScale();
+
+                    // Создаем линии напряжения
+                    //UpdateVoltageLines();
 
                     NotificationService.Notify(NotificationSeverity.Success, "Успех", $"Загружена запись #{recordId}");
                 }
@@ -330,6 +347,35 @@
                 Value = v 
             }).Take(2000).ToList()
         : new List<ChartPoint>();
+
+    private void CalibrateScale()
+    {
+        if (npyValues == null) return;
+
+        double dataMin = npyValues.Min();
+        double dataMax = npyValues.Max();
+        double range = dataMax - dataMin;
+
+        // Добавляем отступы сверху и снизу (20% от диапазона)
+        double padding = range * 0.2;
+
+        minValue = dataMin - padding;
+        maxValue = dataMax + padding;
+
+        // Округляем до ближайших 0.5 мВ для красивого отображения
+        minValue = Math.Floor(minValue * 2) / 2;
+        maxValue = Math.Ceiling(maxValue * 2) / 2;
+
+        // Гарантируем минимальный диапазон 2 мВ для хорошего отображения
+        if (maxValue - minValue < 2.0)
+        {
+            double center = (minValue + maxValue) / 2;
+            minValue = center - 1.0;
+            maxValue = center + 1.0;
+        }
+    }
+
+    
 
     // Модели данных
     public class DoctorInfo

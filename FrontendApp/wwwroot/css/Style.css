@@ -1,0 +1,489 @@
+﻿* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background: #e0f7fa;
+    min-height: 100vh;
+    padding: 20px;
+}
+
+.main-container {
+    background: white;
+    border-radius: 10px;
+    box-shadow: 0 5px 20px rgba(0,0,0,0.1);
+    min-height: calc(100vh - 40px);
+    padding: 30px;
+    max-width: 2000px;
+    margin: 0 auto;
+    position: relative;
+}
+
+.nav-btn {
+    position: absolute;
+    top: 30px;
+    background: none;
+    border: none;
+    font-size: 24px;
+    cursor: pointer;
+    padding: 10px;
+    border-radius: 50%;
+    transition: background 0.3s;
+}
+
+.switch-btn {
+    left: 30px;
+}
+
+.logout-btn {
+    right: 30px;
+}
+
+.nav-btn:hover {
+    background: #f5f5f5;
+}
+
+.logout-btn:hover {
+    background: #c0392b;
+}
+
+.page-title {
+    text-align: center;
+    margin-bottom: 40px;
+    color: #333;
+    font-size: 28px;
+}
+
+.login-container {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
+    padding: 20px;
+}
+
+.login-card {
+    background: white;
+    padding: 40px 30px;
+    border-radius: 10px;
+    box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+    width: 100%;
+    max-width: 400px;
+}
+
+h1 {
+    text-align: center;
+    margin-bottom: 30px;
+    color: #333;
+    font-size: 24px;
+}
+
+.input-group {
+    margin-bottom: 20px;
+}
+
+label {
+    display: block;
+    margin-bottom: 5px;
+    color: #555;
+    font-weight: 500;
+}
+
+input {
+    width: 100%;
+    padding: 12px;
+    border: 2px solid #ddd;
+    border-radius: 5px;
+    font-size: 16px;
+    transition: border-color 0.3s;
+}
+
+    input:focus {
+        outline: none;
+        border-color: #667eea;
+    }
+
+.login-btn {
+    width: 100%;
+    padding: 12px;
+    background: #667eea;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    font-size: 16px;
+    cursor: pointer;
+    transition: background 0.3s;
+}
+
+    .login-btn:hover {
+        background: #5a6fd8;
+    }
+
+.register-link {
+    text-align: center;
+    margin-top: 20px;
+    color: #666;
+}
+
+    .register-link a {
+        color: #667eea;
+        text-decoration: none;
+    }
+
+.error-message {
+    color: #e74c3c;
+    text-align: center;
+    margin-top: 15px;
+    display: none;
+}
+
+.profile-content {
+    display: flex;
+    gap: 50px;
+    align-items: flex-start;
+    max-width: 800px;
+    margin: 0 auto;
+}
+
+.photo-section {
+    text-align: center;
+}
+
+.photo-placeholder {
+    width: 150px;
+    height: 150px;
+    background: #f0f0f0;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 48px;
+    margin-bottom: 15px;
+}
+
+.upload-btn {
+    background: #667eea;
+    color: white;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 5px;
+    cursor: pointer;
+}
+
+.doctor-data {
+    flex: 1;
+}
+
+.data-item {
+    margin-bottom: 20px;
+    padding: 15px;
+    background: #f8f9fa;
+    border-radius: 8px;
+}
+
+    .data-item label {
+        font-weight: bold;
+        color: #555;
+        display: block;
+        margin-bottom: 5px;
+    }
+
+    .data-item span {
+        color: #333;
+        font-size: 16px;
+    }
+
+.ecg-container {
+    display: grid;
+    grid-template-columns: 4fr 1fr;
+    grid-template-rows: auto 1fr;
+    gap: 8px;
+    height: 100vh;
+    padding: 8px;
+    position: relative;
+}
+
+.ecg-nav {
+    grid-column: 1 / -1;
+    grid-row: 1;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    z-index: 1000;
+    position: relative;
+}
+
+    .ecg-nav .nav-btn {
+        background: white;
+        border: 1px solid #ddd;
+        font-size: 16px;
+        cursor: pointer;
+        padding: 8px 16px;
+        border-radius: 4px;
+        transition: background 0.3s;
+        position: static;
+    }
+
+.graphs-section {
+    grid-column: 1;
+    grid-row: 2;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    grid-template-rows: repeat(6, 1fr);
+    gap: 6px;
+    height: 100%;
+}
+
+.graph-container {
+    background: white;
+    border-radius: 4px;
+    padding: 4px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    border: 1px solid #e0e0e0;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+    position: relative;
+}
+
+.graph-title {
+    font-size: 12px;
+    font-weight: bold;
+    color: #333;
+    position: absolute;
+    top: 2px;
+    right: 4px;
+    background: rgba(255,255,255,0.9);
+    padding: 1px 4px;
+    border-radius: 2px;
+    z-index: 10;
+}
+
+.graph-placeholder {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #666;
+    border: 1px dashed #ccc;
+    border-radius: 2px;
+    font-size: 11px;
+    min-height: 0;
+    margin: 0;
+}
+
+.sidebar {
+    grid-column: 2;
+    grid-row: 2;
+    display: grid;
+    grid-template-rows: 1fr 1fr;
+    gap: 8px;
+    height: 100%;
+}
+
+.params-section {
+    grid-row: 1;
+    min-height: 0;
+}
+
+.records-section {
+    grid-row: 2;
+    min-height: 0;
+}
+
+    .params-section .main-container,
+    .records-section .main-container {
+        height: 100%;
+        display: flex;
+        flex-direction: column;
+        padding: 12px;
+    }
+
+.records-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 15px;
+}
+
+.records-list {
+    flex: 1;
+    overflow-y: auto;
+}
+
+.record-card {
+    background: white;
+    border-radius: 8px;
+    padding: 12px;
+    margin-bottom: 8px;
+    cursor: pointer;
+    border-left: 3px solid #007bff;
+    transition: all 0.3s ease;
+}
+
+    .record-card:hover {
+        transform: translateX(2px);
+        box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+    }
+
+    .record-card.active {
+        border-left-color: #28a745;
+        background: #f8fff9;
+    }
+
+.record-header {
+    font-weight: bold;
+    font-size: 14px;
+    margin-bottom: 4px;
+}
+
+.record-meta {
+    font-size: 11px;
+    color: #666;
+}
+
+.param-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 0;
+    border-bottom: 1px solid #f0f0f0;
+}
+
+.param-icon {
+    color: #007bff;
+    width: 16px;
+    text-align: center;
+}
+
+.param-content {
+    flex: 1;
+}
+
+.param-label {
+    font-size: 12px;
+    color: #666;
+}
+
+.param-value {
+    font-weight: 500;
+    color: #333;
+}
+
+.no-data {
+    text-align: center;
+    color: #666;
+    padding: 40px 0;
+}
+
+.no-data-icon {
+    font-size: 32px;
+    margin-bottom: 15px;
+    opacity: 0.5;
+}
+
+.refresh-btn {
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: #666;
+    font-size: 16px;
+    padding: 5px;
+    border-radius: 4px;
+    transition: background 0.3s;
+}
+
+    .refresh-btn:hover {
+        background: #f5f5f5;
+    }
+
+
+
+
+/* Стили для зума */
+.zoom-group {
+    cursor: move;
+}
+
+.graph-container svg {
+    cursor: grab;
+}
+
+    .graph-container svg:active {
+        cursor: grabbing;
+    }
+
+/* Подсветка при наведении */
+.graph-container:hover {
+    box-shadow: 0 0 0 2px #667eea;
+    transition: box-shadow 0.3s ease;
+}
+
+
+
+.graph-container {
+    position: relative;
+    overflow: hidden;
+    border: 1px solid #ccc;
+    background: white;
+    min-height: 120px; /* Минимальная высота */
+}
+
+    .graph-container svg {
+        width: 100%;
+        height: 100%;
+        cursor: grab;
+    }
+
+.zoom-content-group {
+    cursor: move;
+}
+
+.ecg-line {
+    pointer-events: none; /* Чтобы не мешало зуму */
+}
+
+        .graph-container svg:active {
+            cursor: grabbing;
+        }
+
+/* Визуальное выделение активного контейнера */
+.graph-container.active-zoom {
+    box-shadow: 0 0 0 2px #667eea;
+    z-index: 10;
+}
+
+/*
+
+
+
+.graphs-section {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    grid-template-rows: repeat(6, 1fr);
+    gap: 10px;
+    height: 80vh; /* Или нужная тебе высота 
+}
+
+.graph-container {
+    position: relative;
+    min-height: 120px; /* Минимальная высота 
+    background: white;
+    border-radius: 4px;
+}
+
+.graph-title {
+    position: absolute;
+    top: 5px;
+    left: 5px;
+    font-size: 14px;
+    font-weight: bold;
+    color: #333;
+    z-index: 10;
+    background: rgba(255,255,255,0.9);
+    padding: 2px 6px;
+    border-radius: 3px;
+}*/

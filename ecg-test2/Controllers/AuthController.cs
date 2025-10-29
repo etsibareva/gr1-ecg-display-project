@@ -1,6 +1,6 @@
 ﻿using DataAccess.Data;
 using DataAccess.Model;
-using ecg_test2.Services;
+using WebApi.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity.Data;
@@ -11,7 +11,9 @@ using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using static System.Runtime.InteropServices.JavaScript.JSType;
 
-namespace ecg_test2.Controllers
+/* (?) Разнести вспомогательные классы по файлам (?) */
+
+namespace WebApi.Controllers
 {
     public class RegisterRequest
     {
@@ -132,7 +134,7 @@ namespace ecg_test2.Controllers
             if (tokenEntity == null)
                 return Unauthorized(new { error = "Invalid refresh token" });
 
-            // Ротация каждые 24 часа или при подозрительной активности (?)
+            /* (?) Ротация каждые 24 часа или при подозрительной активности (?) */
             var shouldRotate = DateTime.UtcNow - tokenEntity.CreatedAt > TimeSpan.FromDays(1);
 
             string newRefreshToken = refreshToken;
@@ -140,7 +142,7 @@ namespace ecg_test2.Controllers
             if (shouldRotate)
             {
                 tokenEntity.IsRevoked = true;
-                //await context.SaveChangesAsync(); повторно сохраняет токен (?)
+                /* (?) await context.SaveChangesAsync(); повторно сохраняет токен (?) */
                 
                 newRefreshToken = await refreshTokenService.GenerateRefreshTokenAsync(tokenEntity.Doctor.IdDoctor);
             }
@@ -168,11 +170,13 @@ namespace ecg_test2.Controllers
 
             await blacklistService.AddToBlacklistAsync(accessToken, TimeSpan.FromMinutes(15));
 
-            await refreshTokenService.RevokeRefreshTokensAsync(userId); // когда выходим - выходим из всех сессий! (?)
+            /* (?) Когда выходим - выходим из всех сессий (?) */
+            await refreshTokenService.RevokeRefreshTokensAsync(userId); 
 
             return Ok(new { message = "Logged out successfully" });
         }
 
+        /* Endpoint для получения данных о враче. */
         [HttpGet("me")]
         [Authorize]
         public async Task<IActionResult> GetCurrentUser()

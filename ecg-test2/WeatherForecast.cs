@@ -1,4 +1,4 @@
-namespace ecg_test2
+namespace WebApi
 {
     public class WeatherForecast
     {

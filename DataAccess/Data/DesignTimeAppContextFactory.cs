@@ -18,11 +18,11 @@ namespace DataAccess.Data
         {
             Env.Load();
 
+            /* (!) Убрать все значения по умолчанию. Тестировать. (!) */
             var dbHost = Environment.GetEnvironmentVariable("POSTGRES_HOST") ?? "localhost";
             var dbName = Environment.GetEnvironmentVariable("POSTGRES_DB") ?? "EcgDb";
             var dbUser = Environment.GetEnvironmentVariable("POSTGRES_USER") ?? "postgres";
             var dbPassword = Environment.GetEnvironmentVariable("POSTGRES_PASSWORD");
-
             var connectionString = $"Host={dbHost};Port=5432;Database={dbName};Username={dbUser};Password={dbPassword}";
 
             var optionsBuilder = new DbContextOptionsBuilder<AppDbContext>();
