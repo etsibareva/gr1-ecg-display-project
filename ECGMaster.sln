@@ -7,8 +7,6 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "WebApi", "ecg-test2\WebApi.
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DataAccess", "DataAccess\DataAccess.csproj", "{1E9B6BED-7D30-40FD-9D35-3AB1D1683AC9}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BlazorApp1", "BlazorApp1\BlazorApp1.csproj", "{F9FA5133-7417-4A9D-891F-4F702C3DA52D}"
-EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FrontendApp", "FrontendApp\FrontendApp.csproj", "{B786696A-F45A-4234-8B0F-21CE33A13CC4}"
 EndProject
 Global
@@ -25,10 +23,6 @@ Global
 		{1E9B6BED-7D30-40FD-9D35-3AB1D1683AC9}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{1E9B6BED-7D30-40FD-9D35-3AB1D1683AC9}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{1E9B6BED-7D30-40FD-9D35-3AB1D1683AC9}.Release|Any CPU.Build.0 = Release|Any CPU
-		{F9FA5133-7417-4A9D-891F-4F702C3DA52D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{F9FA5133-7417-4A9D-891F-4F702C3DA52D}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{F9FA5133-7417-4A9D-891F-4F702C3DA52D}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{F9FA5133-7417-4A9D-891F-4F702C3DA52D}.Release|Any CPU.Build.0 = Release|Any CPU
 		{B786696A-F45A-4234-8B0F-21CE33A13CC4}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{B786696A-F45A-4234-8B0F-21CE33A13CC4}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{B786696A-F45A-4234-8B0F-21CE33A13CC4}.Release|Any CPU.ActiveCfg = Release|Any CPU

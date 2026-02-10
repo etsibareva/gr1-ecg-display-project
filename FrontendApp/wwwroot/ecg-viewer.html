@@ -8,72 +8,52 @@
 </head>
 <body>
     <div class="ecg-container">
-        <!-- Навигация -->
         <div class="ecg-nav">
-            <button class="nav-btn switch-btn" onclick="window.location.href='profile.html'">
-                Личный кабинет
-            </button>
-            <button class="nav-btn logout-btn" onclick="handleLogout()">
-                Выйти
-            </button>
-        </div>
-
-        <!-- 12 графиков - ЛЕВАЯ КОЛОНКА: I, II, III, aVR, aVL, aVF | ПРАВАЯ КОЛОНКА: V1-V6 -->
-        <div class="graphs-section">
-            <!-- Левая колонка: стандартные отведения -->
-            <div class="graph-container" style="grid-column: 1; grid-row: 1;">
-                <div class="graph-title">I</div>
-                <div class="graph-placeholder">I</div>
+            <div class="nav-left">
+                <button class="nav-btn" onclick="loadDoctorRecords()">Обновить записи</button>
             </div>
-            <div class="graph-container" style="grid-column: 1; grid-row: 2;">
-                <div class="graph-title">II</div>
-                <div class="graph-placeholder">II</div>
+            <div class="nav-center">
+                <h3>Просмотр ЭКГ</h3>
             </div>
-            <div class="graph-container" style="grid-column: 1; grid-row: 3;">
-                <div class="graph-title">III</div>
-                <div class="graph-placeholder">III</div>
-            </div>
-            <div class="graph-container" style="grid-column: 1; grid-row: 4;">
-                <div class="graph-title">aVR</div>
-                <div class="graph-placeholder">aVR</div>
-            </div>
-            <div class="graph-container" style="grid-column: 1; grid-row: 5;">
-                <div class="graph-title">aVL</div>
-                <div class="graph-placeholder">aVL</div>
-            </div>
-            <div class="graph-container" style="grid-column: 1; grid-row: 6;">
-                <div class="graph-title">aVF</div>
-                <div class="graph-placeholder">aVF</div>
-            </div>
-
-            <!-- Правая колонка: грудные отведения V1-V6 ДРУГ ПОД ДРУГОМ -->
-            <div class="graph-container" style="grid-column: 2; grid-row: 1;">
-                <div class="graph-title">V1</div>
-                <div class="graph-placeholder">V1</div>
-            </div>
-            <div class="graph-container" style="grid-column: 2; grid-row: 2;">
-                <div class="graph-title">V2</div>
-                <div class="graph-placeholder">V2</div>
-            </div>
-            <div class="graph-container" style="grid-column: 2; grid-row: 3;">
-                <div class="graph-title">V3</div>
-                <div class="graph-placeholder">V3</div>
-            </div>
-            <div class="graph-container" style="grid-column: 2; grid-row: 4;">
-                <div class="graph-title">V4</div>
-                <div class="graph-placeholder">V4</div>
-            </div>
-            <div class="graph-container" style="grid-column: 2; grid-row: 5;">
-                <div class="graph-title">V5</div>
-                <div class="graph-placeholder">V5</div>
-            </div>
-            <div class="graph-container" style="grid-column: 2; grid-row: 6;">
-                <div class="graph-title">V6</div>
-                <div class="graph-placeholder">V6</div>
+            <div class="nav-right">
+                <button class="nav-btn switch-btn" onclick="window.location.href='profile.html'">
+                    Личный кабинет
+                </button>
+                <button class="nav-btn logout-btn" onclick="handleLogout()">
+                    Выйти
+                </button>
             </div>
         </div>
 
-        <!-- Правая часть - 1/5 экрана -->
+        <!-- ЛЕВАЯ КОЛОНКА 4/5 -->
+        <div class="left-column">
+            <!-- ВЕРХ: 2 графика рядом -->
+            <div class="graphs-row">
+                <!-- Левый контейнер - Стандартные отведения -->
+                <div class="graph-container graph-left" id="standard-leads">
+                    <div class="graph-title">Стандартные отведения</div>
+                </div>
+
+                <!-- Правый контейнер - Грудные отведения -->
+                <div class="graph-container graph-right" id="chest-leads">
+                    <div class="graph-title">Грудные отведения</div>
+                </div>
+            </div>
+
+            <div class="full-signal-controls" style="margin-bottom: 10px; padding: 5px; background: #f5f5f5; border-radius: 4px;">
+                <label style="font-size: 12px; margin-right: 10px;">Канал для детального просмотра:</label>
+                <select id="fullSignalChannelSelect" style="padding: 4px 8px; border: 1px solid #ddd; border-radius: 3px; font-size: 12px;">
+                    <option value="">-- Выберите канал --</option>
+                </select>
+            </div>
+
+            <!-- НИЗ: третий контейнер смещен к нижнему краю -->
+            <div class="graph-container graph-bottom" id="bottom-lead">
+                <div class="graph-title">Дополнительные данные</div>
+            </div>
+        </div>
+
+        <!-- ПРАВАЯ КОЛОНКА 1/5 -->
         <div class="sidebar">
             <div class="params-section">
                 <div class="main-container">
@@ -83,14 +63,69 @@
                     </div>
                 </div>
             </div>
-            <div class="records-section">
+            <div class="markup-section">
                 <div class="main-container">
-                    <div class="records-header">
-                        <h4>Записи</h4>
-                        <button class="refresh-btn" onclick="loadDoctorRecords()">↻</button>
+                    <h4>New markup</h4>
+                    <div class="wave-switchers">
+                        <div class="wave-switcher-group">
+                            <input type="radio" id="wave-P" name="wave-type" value="P" checked>
+                            <label for="wave-P">P</label>
+
+                            <input type="radio" id="wave-Q" name="wave-type" value="Q">
+                            <label for="wave-Q">Q</label>
+
+                            <input type="radio" id="wave-R" name="wave-type" value="R">
+                            <label for="wave-R">R</label>
+
+                            <input type="radio" id="wave-S" name="wave-type" value="S">
+                            <label for="wave-S">S</label>
+
+                            <input type="radio" id="wave-T" name="wave-type" value="T">
+                            <label for="wave-T">T</label>
+
+                            <input type="radio" id="wave-F" name="wave-type" value="F">
+                            <label for="wave-F">F</label>
+                        </div>
                     </div>
-                    <div class="records-list" id="recordsList">
-                        <div class="no-data">Загрузка...</div>
+                    <div style="display: inline-block; margin-left: 15px;">
+                        <input type="checkbox" id="markupModeToggle" style="margin-right: 5px;">
+                        <label for="markupModeToggle" style="font-size: 12px; cursor: pointer;">Режим разметки</label>
+                    </div>
+
+                    <!-- Таблица разметки волн и зубцов -->
+                    <div class="markup-table-container">
+                        <table class="markup-table">
+                            <thead>
+                                <tr>
+                                    <th>Тип</th>
+                                    <th>Отведение</th>
+                                    <th>Значение</th>
+                                    <th>Время</th>
+                                    <th>Комментарий</th>
+                                </tr>
+                            </thead>
+                            <tbody id="markupTableBody">
+                                <tr>
+                                    <td colspan="4" class="empty-markup">Нет данных о разметке</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            <div class="waves-section">
+                <div class="section-header">
+                    <h3>Волны и зубцы</h3>
+                </div>
+                <div class="records-section">
+                    <div class="main-container">
+                        <div class="records-header">
+                            <h4>Записи</h4>
+                            <button class="refresh-btn" onclick="loadDoctorRecords()">↻</button>
+                        </div>
+                        <div class="records-list" id="recordsList">
+                            <div class="no-data">Загрузка...</div>
+                        </div>
                     </div>
                 </div>
             </div>
