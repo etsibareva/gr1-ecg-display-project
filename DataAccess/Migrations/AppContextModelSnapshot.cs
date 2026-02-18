@@ -73,15 +73,30 @@ namespace DataAccess.Migrations
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
 
+                    b.Property<int>("IdRecord")
+                        .HasColumnType("integer");
+
                     b.Property<string>("JsonData")
                         .IsRequired()
-                        .HasColumnType("jsonb");
+                        .HasColumnType("text");
+
+                    b.Property<long>("MarkupFileSize")
+                        .HasColumnType("bigint");
+
+                    b.Property<string>("MarkupObjectName")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("MarkupOriginalFileName")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<DateTime>("MarkupUploadedAt")
+                        .HasColumnType("timestamp with time zone");
 
                     b.HasKey("IdMarkup");
 
-                    b.HasIndex("JsonData");
-
-                    NpgsqlIndexBuilderExtensions.HasMethod(b.HasIndex("JsonData"), "GIN");
+                    b.HasIndex("IdRecord");
 
                     b.ToTable("markups");
                 });
@@ -95,9 +110,6 @@ namespace DataAccess.Migrations
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("IdRecord"));
 
                     b.Property<int>("IdDoctor")
-                        .HasColumnType("integer");
-
-                    b.Property<int>("IdMarkup")
                         .HasColumnType("integer");
 
                     b.Property<int>("RC")
@@ -123,8 +135,6 @@ namespace DataAccess.Migrations
                     b.HasKey("IdRecord");
 
                     b.HasIndex("IdDoctor");
-
-                    b.HasIndex("IdMarkup");
 
                     b.ToTable("records");
                 });
@@ -160,6 +170,17 @@ namespace DataAccess.Migrations
                     b.ToTable("refreshTokens");
                 });
 
+            modelBuilder.Entity("DataAccess.Model.Markup", b =>
+                {
+                    b.HasOne("DataAccess.Model.Record", "Record")
+                        .WithMany("Markups")
+                        .HasForeignKey("IdRecord")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Record");
+                });
+
             modelBuilder.Entity("DataAccess.Model.Record", b =>
                 {
                     b.HasOne("DataAccess.Model.Doctor", "Doctor")
@@ -168,15 +189,7 @@ namespace DataAccess.Migrations
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
-                    b.HasOne("DataAccess.Model.Markup", "Markup")
-                        .WithMany("Records")
-                        .HasForeignKey("IdMarkup")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
                     b.Navigation("Doctor");
-
-                    b.Navigation("Markup");
                 });
 
             modelBuilder.Entity("DataAccess.Model.RefreshToken", b =>
@@ -195,9 +208,9 @@ namespace DataAccess.Migrations
                     b.Navigation("RefreshTokens");
                 });
 
-            modelBuilder.Entity("DataAccess.Model.Markup", b =>
+            modelBuilder.Entity("DataAccess.Model.Record", b =>
                 {
-                    b.Navigation("Records");
+                    b.Navigation("Markups");
                 });
 #pragma warning restore 612, 618
         }

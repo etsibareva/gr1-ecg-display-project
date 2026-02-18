@@ -1,0 +1,285 @@
+﻿/* ==================== ОСНОВНАЯ СЕТКА ПРАВОЙ КОЛОНКИ ==================== */
+.sidebar {
+    grid-column: 2;
+    grid-row: 2;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    height: 1386px; /* Та же высота, что у левой колонки */
+    overflow-y: auto;
+}
+
+/* ==================== КОНТЕЙНЕРЫ ==================== */
+.params-section,
+.markups-list-section,
+.markup-section,
+.waves-section {
+    background: white;
+    border-radius: 6px;
+    padding: 16px;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+    border: 1px solid #e0e0e0;
+    width: 100%;
+    box-sizing: border-box;
+}
+
+/* Перераспределение высоты между 4 контейнерами */
+.params-section {
+    height: 200px; /* УМЕНЬШИЛИ с 330px до 200px */
+}
+
+.markups-list-section {
+    height: 330px; /* Список разметок - без изменений */
+}
+
+.markup-section {
+    height: 360px; /* New markup - без изменений */
+    overflow-y: auto;
+}
+
+.waves-section {
+    height: 496px; /* УВЕЛИЧИЛИ с 330px до 496px (1386 - 200 - 330 - 360 - 3*8) */
+    padding: 0;
+}
+
+/* ==================== RECORDS SECTION (вложенный) ==================== */
+.records-section {
+    height: 100%;
+    padding: 16px;
+    box-sizing: border-box;
+}
+
+.records-header,
+.markups-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 15px;
+}
+
+.records-list,
+.markups-list {
+    height: calc(100% - 50px);
+    overflow-y: auto;
+}
+
+/* ==================== КАРТОЧКИ ==================== */
+.record-card,
+.markup-card {
+    background: #f8f9fa;
+    border-radius: 6px;
+    padding: 10px;
+    margin-bottom: 6px;
+    cursor: pointer;
+    border-left: 3px solid #007bff;
+    transition: all 0.2s;
+}
+
+    .record-card:hover,
+    .markup-card:hover {
+        transform: translateX(2px);
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+
+    .record-card.active,
+    .markup-card.active {
+        background: #e3f2fd;
+        border-left-color: #2196f3;
+    }
+
+.record-header,
+.markup-header {
+    font-weight: bold;
+    font-size: 13px;
+    margin-bottom: 3px;
+    color: #333;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.record-meta,
+.markup-meta {
+    font-size: 11px;
+    color: #666;
+    display: flex;
+    justify-content: space-between;
+}
+
+.markup-badge {
+    background: #4CAF50;
+    color: white;
+    padding: 2px 6px;
+    border-radius: 3px;
+    font-size: 10px;
+}
+
+/* ==================== MARKUP SECTION ==================== */
+.markup-section h4,
+.params-section h4,
+.records-section h4,
+.markups-list-section h4 {
+    margin: 0 0 15px 0;
+    color: #333;
+    font-size: 16px;
+    font-weight: 600;
+}
+
+.wave-switcher-group {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 15px;
+}
+
+    .wave-switcher-group input[type="radio"] {
+        display: none;
+    }
+
+    .wave-switcher-group label {
+        display: inline-block;
+        padding: 6px 12px;
+        background: #f5f5f5;
+        border: 2px solid #ddd;
+        border-radius: 4px;
+        cursor: pointer;
+        font-size: 12px;
+        font-weight: 500;
+        color: #666;
+        user-select: none;
+        transition: all 0.2s;
+    }
+
+    .wave-switcher-group input[type="radio"]:checked + label {
+        background: #2c6fbb;
+        border-color: #2c6fbb;
+        color: white;
+    }
+
+    .wave-switcher-group label:hover {
+        background: #e9e9e9;
+        border-color: #ccc;
+    }
+
+/* Markup table */
+.markup-table-container {
+    margin-top: 10px;
+    border: 1px solid #e0e0e0;
+    border-radius: 4px;
+    max-height: 200px;
+    overflow-y: auto;
+}
+
+.markup-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 11px;
+    background: white;
+}
+
+    .markup-table th {
+        background: #f8f9fa;
+        color: #333;
+        font-weight: 600;
+        padding: 8px 6px;
+        text-align: left;
+        border-bottom: 1px solid #e0e0e0;
+        position: sticky;
+        top: 0;
+        z-index: 10;
+    }
+
+    .markup-table td {
+        padding: 6px;
+        border-bottom: 1px solid #f0f0f0;
+        color: #555;
+    }
+
+    .markup-table tr:hover {
+        background: #f8f9fa;
+    }
+
+.empty-markup {
+    text-align: center;
+    color: #999;
+    font-style: italic;
+    padding: 20px 10px;
+    background: #fafafa;
+}
+
+/* Markup mode toggle */
+#markupModeToggle {
+    margin-right: 5px;
+}
+
+label[for="markupModeToggle"] {
+    font-size: 12px;
+    cursor: pointer;
+}
+
+/* Save markup status */
+#saveMarkupStatus {
+    font-size: 12px;
+    color: #666;
+}
+
+/* No data state */
+.no-data {
+    text-align: center;
+    color: #666;
+    padding: 20px 0;
+    font-size: 14px;
+}
+
+/* ==================== MAIN CONTAINER ==================== */
+.main-container {
+    width: 100%;
+    height: 100%;
+}
+
+/* Добавьте в ваш CSS файл */
+.delete-record-btn,
+.delete-markup-btn {
+    transition: background-color 0.3s, transform 0.1s;
+}
+
+    .delete-record-btn:hover,
+    .delete-markup-btn:hover {
+        background-color: #d32f2f !important;
+        transform: scale(1.05);
+    }
+
+    .delete-record-btn:active,
+    .delete-markup-btn:active {
+        transform: scale(0.95);
+    }
+
+.record-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.markup-actions {
+    border-top: 1px solid #eee;
+    padding-top: 8px;
+}
+
+/* Стили для уведомлений */
+.notification {
+    font-size: 14px;
+    font-weight: 500;
+    min-width: 250px;
+}
+
+    .notification.success {
+        background-color: #4CAF50;
+    }
+
+    .notification.error {
+        background-color: #f44336;
+    }
+
+    .notification.info {
+        background-color: #2196F3;
+    }

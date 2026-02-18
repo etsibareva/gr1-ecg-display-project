@@ -24,6 +24,8 @@ namespace DataAccess.Services
 
         /* (!) Избавиться от значения по умолчанию (!) */
         public string BucketName { get; set; } = "signals";
+
+        public string MarkupBucketName { get; set; } = "markups";
     }
 
     public partial class NpyFileService

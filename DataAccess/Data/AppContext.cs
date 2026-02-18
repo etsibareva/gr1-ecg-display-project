@@ -18,7 +18,6 @@ namespace DataAccess.Data
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
-            /* Таблица Refresh-токенов */
             modelBuilder.Entity<RefreshToken>(entity =>
             {
                 entity.HasKey(rt => rt.IdRefreshToken);
@@ -29,30 +28,27 @@ namespace DataAccess.Data
                       .OnDelete(DeleteBehavior.Cascade);
             });
 
-            /* Таблица врачей */
             modelBuilder.Entity<Doctor>(entity =>
             {
                 entity.HasKey(u => u.IdDoctor);
                 entity.HasIndex(u => u.Email).IsUnique();
             });
 
-            /* Таблица разметок */
-            /* (!) JSON перевести в ещё одно хранилище MinIO (!) */
             modelBuilder.Entity<Markup>(entity =>
-             {
-                 entity.HasKey(m => m.IdMarkup);
-                 entity.Property(m => m.JsonData)
-                       .IsRequired()
-                       .HasColumnType("jsonb");
+            {
+                entity.HasKey(m => m.IdMarkup);
 
-                 /* (?) ещё индексы для скорости поиска (?) */
+                entity.Property(m => m.IdRecord)
+                      .IsRequired();
 
-                 // GIN индекс для быстрого поиска по JSON
-                 entity.HasIndex(m => m.JsonData)
-                       .HasMethod("GIN");
-             });
+                entity.HasIndex(m => m.IdRecord);
 
-            /* Таблица записей */
+                entity.HasOne(m => m.Record)
+                      .WithMany(r => r.Markups)
+                      .HasForeignKey(m => m.IdRecord)
+                      .OnDelete(DeleteBehavior.Cascade);
+            });
+
             modelBuilder.Entity<Record>(entity =>
             {
                 entity.HasKey(r => r.IdRecord);
@@ -62,10 +58,10 @@ namespace DataAccess.Data
                       .HasForeignKey(r => r.IdDoctor)
                       .OnDelete(DeleteBehavior.Restrict);
 
-                entity.HasOne(r => r.Markup)
-                      .WithMany(m => m.Records)
-                      .HasForeignKey(r => r.IdMarkup)
-                      .OnDelete(DeleteBehavior.Restrict);
+                entity.HasMany(r => r.Markups)
+                      .WithOne(m => m.Record)
+                      .HasForeignKey(m => m.IdRecord)
+                      .OnDelete(DeleteBehavior.Cascade);
             });
 
             base.OnModelCreating(modelBuilder);

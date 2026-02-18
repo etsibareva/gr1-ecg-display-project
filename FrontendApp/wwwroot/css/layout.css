@@ -1,0 +1,81 @@
+﻿* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Segoe UI', sans-serif;
+    background: #e0f7fa;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
+    padding: 20px; /* Добавили отступы от краев окна */
+}
+
+.ecg-container {
+    display: grid;
+    grid-template-columns: 3fr 1.2fr; /* Изменили соотношение, увеличив правую колонку */
+    grid-template-rows: 60px 1fr; /* Вторая строка теперь адаптивная */
+    gap: 12px; /* Немного увеличили gap */
+    width: 100%;
+    max-width: 2200px; /* Увеличили максимальную ширину */
+    height: calc(100vh - 40px); /* Адаптивная высота с учетом padding body */
+    padding: 0;
+    background: #e0f7fa;
+}
+
+.left-column {
+    grid-column: 1;
+    grid-row: 2;
+    display: grid;
+    grid-template-rows: 1fr 200px; /* Верхняя часть адаптивная, нижняя фиксированная */
+    gap: 12px;
+    height: 100%;
+    min-height: 0; /* Важно для корректной работы с адаптивной высотой */
+}
+
+.graphs-row {
+    grid-row: 1;
+    display: grid;
+    grid-template-columns: 1fr 1fr; /* Теперь пропорционально, не фиксированные пиксели */
+    gap: 12px;
+    height: 100%;
+    min-height: 0;
+}
+
+.sidebar {
+    grid-column: 2;
+    grid-row: 2;
+    display: flex; /* Меняем с grid на flex для лучшего контроля */
+    flex-direction: column;
+    gap: 12px;
+    height: 100%;
+    overflow-y: auto;
+    min-height: 0;
+    padding-right: 4px; /* Небольшой отступ для скролла */
+}
+
+/* Адаптация для очень широких экранов */
+@media (min-width: 2200px) {
+    body {
+        padding: 30px 60px; /* Увеличиваем отступы на широких экранах */
+    }
+    
+    .ecg-container {
+        max-width: 2400px;
+        grid-template-columns: 3fr 1.3fr; /* Еще немного увеличиваем правую колонку */
+    }
+}
+
+/* Для экранов меньше 1400px */
+@media (max-width: 1400px) {
+    body {
+        padding: 10px;
+    }
+    
+    .ecg-container {
+        grid-template-columns: 3fr 1.1fr; /* Немного уменьшаем правую колонку */
+    }
+}

@@ -20,27 +20,32 @@
     }
 
     async apiRequest(url, options = {}) {
-        const config = {
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            ...options
-        };
+        // 1. Готовим headers
+        const headers = { ...options.headers };
 
-        if (options.headers) {
-            config.headers = {
-                ...config.headers,
-                ...options.headers
-            };
+        // 2. Проверяем FormData
+        const isFormData = options.body instanceof FormData;
+
+        // 3. Добавляем Content-Type только если НЕ FormData
+        if (!isFormData && !headers['Content-Type']) {
+            headers['Content-Type'] = 'application/json';
         }
 
+        // 4. Добавляем токен
         if (this.accessToken) {
-            config.headers['Authorization'] = `Bearer ${this.accessToken}`;
+            headers['Authorization'] = `Bearer ${this.accessToken}`;
         }
+
+        // 5. Готовим config для fetch
+        const config = {
+            ...options,
+            headers
+        };
 
         try {
             const response = await fetch(url, config);
 
+            // Обработка 401
             if (response.status === 401 && this.refreshToken) {
                 const refreshed = await this.refreshTokens();
                 if (refreshed) {

@@ -25,19 +25,17 @@ namespace DataAccess.Model
 
         public int Type { get; set; }
 
-        /* имя файла в MinIO для NPY данных */
+        public long SignalFileSize { get; set; }
+
+        /* имя файла в MinIO для NPY данных кодированное */
         public string SignalObjectName { get; set; }
 
-        public int IdMarkup { get; set; }
-
-        /* Возможно изменение при переходе Markup на MinIO хранилище. */
-        [ForeignKey("IdMarkup")]
-        public virtual Markup Markup { get; set; }
-
-        public long SignalFileSize { get; set; }
+        /* имя файла в MinIO для NPY данных изначальное */
+        public string SignalOriginalFileName { get; set; }
 
         public DateTime SignalUploadedAt { get; set; } = DateTime.UtcNow;
 
-        public string SignalOriginalFileName { get; set; } = string.Empty;
+        /* отношение 1 запись ко многим разметкам */
+        public virtual ICollection<Markup> Markups { get; set; } = new List<Markup>();
     }
 }

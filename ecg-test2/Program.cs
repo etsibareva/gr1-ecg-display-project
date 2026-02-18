@@ -45,6 +45,7 @@ builder.Services.AddDbContext<AppDbContext>(options => options.UseNpgsql(connect
 /* Регистрация MinIO и Npy сервиса */
 builder.Services.Configure<MinioOptions>(configuration.GetSection("Minio"));
 builder.Services.AddScoped<NpyFileService>();
+builder.Services.AddScoped<MarkupJsonService>();
 
 /* Регистрация сервисов авторизации */
 builder.Services.AddScoped<PasswordService>();
@@ -109,7 +110,10 @@ if (app.Environment.IsDevelopment())
 using (var scope = app.Services.CreateScope())
 {
     var npyService = scope.ServiceProvider.GetRequiredService<NpyFileService>();
+    var jsonService = scope.ServiceProvider.GetRequiredService<NpyFileService>();
+
     await npyService.InitializeAsync();
+    await jsonService.InitializeAsync();
 }
 
 /* Настройка CORS для запросов клиента Radzen */
