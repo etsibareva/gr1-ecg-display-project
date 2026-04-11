@@ -1,5 +1,5 @@
 ﻿// ==================== ОБЩИЕ УТИЛИТЫ ====================
-const formatFileSize = bytes => {
+/*const formatFileSize = bytes => {
     if (!bytes) return '0 B';
     const sizes = ['B', 'KB', 'MB', 'GB'];
     let order = 0, len = bytes;
@@ -53,4 +53,4 @@ window.loadMarkupPoints = loadMarkupPoints;
 window.saveAllMarkupPoints = saveAllMarkupPoints;
 window.cancelPointSelection = cancelPointSelection;
 window.saveSinglePoint = saveSinglePoint;
-window.destroyZoomHandlers = destroyZoomHandlers;
+window.destroyZoomHandlers = destroyZoomHandlers;*/

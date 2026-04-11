@@ -1,5 +1,4 @@
-﻿// ==================== ПЕРЕМЕННЫЕ СОСТОЯНИЯ РАЗМЕТКИ ====================
-let markupData = [];
+﻿let markupData = [];
 let ecgPointSelectionActive = false;
 let currentSelectedWaveType = 'P';
 let firstPointSelected = false;
@@ -8,22 +7,67 @@ let firstPointElement = null;
 let secondPointData = null;
 let secondPointElement = null;
 
-// ==================== ФУНКЦИИ ВЫБОРА ТОЧЕК ====================
+const API_BASE_URL = '/api';
+let currentDoctorId = null;
+let currentRecord = null;
+let fullEcgData = null;
+let fullSignalData = null;
+let selectedChannelIndex = null;
+
+const formatFileSize = bytes => {
+    if (!bytes) return '0 B';
+    const sizes = ['B', 'KB', 'MB', 'GB'];
+    let order = 0;
+    let len = bytes;
+    while (len >= 1024 && order < 3) {
+        order++;
+        len /= 1024;
+    }
+    return `${len.toFixed(2)} ${sizes[order]}`;
+};
+
+const getSignalType = type => {
+    const types = { 1: 'ЭКГ', 2: 'ММГ', 3: 'ЭЭГ' };
+    return types[type] || `Тип ${type}`;
+};
+
+const showError = msg => alert('Ошибка: ' + msg);
+
+const showNotification = (message, type = 'info') => {
+    const notification = document.createElement('div');
+    notification.className = `notification ${type}`;
+    notification.textContent = message;
+    notification.style.cssText = `
+        position: fixed; top: 20px; right: 20px; padding: 15px 20px;
+        background-color: ${type === 'success' ? '#4CAF50' : type === 'error' ? '#f44336' : '#2196F3'};
+        color: white; border-radius: 4px; z-index: 1000;
+        animation: slideIn 0.3s ease; box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+    `;
+
+    document.body.appendChild(notification);
+
+    const style = document.createElement('style');
+    style.textContent = `
+        @keyframes slideIn {
+            from { transform: translateX(100%); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+    `;
+    document.head.appendChild(style);
+
+    setTimeout(() => {
+        notification.style.animation = 'slideIn 0.3s ease reverse';
+        setTimeout(() => notification.remove(), 300);
+    }, 3000);
+};
+
 function initializePointSelection() {
     ecgPointSelectionActive = true;
     firstPointSelected = false;
     firstPointData = firstPointElement = secondPointData = secondPointElement = null;
     document.body.style.cursor = 'crosshair';
 
-    d3.selectAll('.ecg-graph .ecg-point')
-        .style('cursor', 'pointer')
-        .on('click.point-selection', function (e, d) {
-            if (!ecgPointSelectionActive) return;
-            e.stopPropagation();
-            handlePointClick.call(this, e, d);
-        });
-
-    d3.selectAll('.ecg-point-bottom')
+    d3.selectAll('.ecg-graph .ecg-point, .ecg-point-bottom')
         .style('cursor', 'pointer')
         .on('click.point-selection', function (e, d) {
             if (!ecgPointSelectionActive) return;
@@ -37,36 +81,22 @@ function initializePointSelection() {
 function handlePointClick(e, d) {
     if (!firstPointSelected) {
         if (firstPointElement) {
-            d3.select(firstPointElement)
-                .style('fill', 'transparent')
-                .attr('r', 4);
+            d3.select(firstPointElement).style('fill', 'transparent').attr('r', 4);
         }
 
         firstPointElement = this;
         firstPointData = d;
         firstPointSelected = true;
 
-        d3.select(this)
-            .style('fill', '#ff0000')
-            .attr('r', 3);
+        d3.select(this).style('fill', '#ff0000').attr('r', 3);
 
-        let channel;
-        let timeInSeconds;
-
-        if (this.classList.contains('ecg-point-bottom')) {
-            channel = fullSignalData.name;
-            timeInSeconds = d.index / fullSignalData.samplingRate;
-        } else {
-            channel = d3.select(this.closest('.ecg-graph'))
-                .select('text')
-                .text();
-            timeInSeconds = d.x / 125;
-        }
+        const isBottom = this.classList.contains('ecg-point-bottom');
+        const channel = isBottom ? fullSignalData.name : d3.select(this.closest('.ecg-graph')).select('text').text();
+        const timeInSeconds = isBottom ? d.index / fullSignalData.samplingRate : d.x / 125;
 
         let preview = document.getElementById('markupPreview');
         if (!preview) {
-            preview = document.getElementById('markupTableBody')
-                .appendChild(document.createElement('tr'));
+            preview = document.getElementById('markupTableBody').appendChild(document.createElement('tr'));
             preview.id = 'markupPreview';
         }
 
@@ -85,7 +115,6 @@ function handlePointClick(e, d) {
                     <button onclick="cancelPointSelection()" style="font-size:10px;padding:2px 5px;">✗</button>
                 </div>
             </td>`;
-
     } else {
         const isFirstBottom = firstPointElement.classList.contains('ecg-point-bottom');
         const isSecondBottom = this.classList.contains('ecg-point-bottom');
@@ -94,39 +123,23 @@ function handlePointClick(e, d) {
             return alert('Обе точки должны быть на одном графике');
         }
 
-        if (!isFirstBottom && !isSecondBottom) {
-            if (this.closest('.ecg-graph') !== firstPointElement.closest('.ecg-graph')) {
-                return alert('Обе точки должны быть в одном отведении');
-            }
+        if (!isFirstBottom && !isSecondBottom && this.closest('.ecg-graph') !== firstPointElement.closest('.ecg-graph')) {
+            return alert('Обе точки должны быть в одном отведении');
         }
 
         if (secondPointElement) {
-            d3.select(secondPointElement)
-                .style('fill', 'transparent')
-                .attr('r', 4);
+            d3.select(secondPointElement).style('fill', 'transparent').attr('r', 4);
         }
 
         secondPointElement = this;
         secondPointData = d;
 
-        d3.select(this)
-            .style('fill', '#0066cc')
-            .attr('r', 3);
+        d3.select(this).style('fill', '#0066cc').attr('r', 3);
 
-        let channel;
-        let time1, time2;
-
-        if (this.classList.contains('ecg-point-bottom')) {
-            channel = fullSignalData.name;
-            time1 = firstPointData.index / fullSignalData.samplingRate;
-            time2 = d.index / fullSignalData.samplingRate;
-        } else {
-            channel = d3.select(this.closest('.ecg-graph'))
-                .select('text')
-                .text();
-            time1 = firstPointData.x / 125;
-            time2 = d.x / 125;
-        }
+        const isBottom = this.classList.contains('ecg-point-bottom');
+        const channel = isBottom ? fullSignalData.name : d3.select(this.closest('.ecg-graph')).select('text').text();
+        const time1 = isBottom ? firstPointData.index / fullSignalData.samplingRate : firstPointData.x / 125;
+        const time2 = isBottom ? d.index / fullSignalData.samplingRate : d.x / 125;
 
         markupData.push({
             type: currentSelectedWaveType,
@@ -134,7 +147,7 @@ function handlePointClick(e, d) {
             time1: +time1.toFixed(3),
             value1: +firstPointData.value.toFixed(4),
             time2: +time2.toFixed(3),
-            value2: +secondPointData.value.toFixed(4),
+            value2: +d.value.toFixed(4),
             comment: document.getElementById('previewComment')?.value || ''
         });
 
@@ -144,23 +157,12 @@ function handlePointClick(e, d) {
 }
 
 function handleKeyPress(e) {
-    if (e.key === 'Escape' && ecgPointSelectionActive)
+    if (e.key === 'Escape' && ecgPointSelectionActive) {
         clearSelection();
-    else if (e.key === 'Enter' && firstPointSelected && !secondPointData) {
+    } else if (e.key === 'Enter' && firstPointSelected && !secondPointData) {
         const isBottom = firstPointElement.classList.contains('ecg-point-bottom');
-
-        let channel;
-        let time1;
-
-        if (isBottom) {
-            channel = fullSignalData.name;
-            time1 = firstPointData.index / fullSignalData.samplingRate;
-        } else {
-            channel = d3.select(firstPointElement.closest('.ecg-graph'))
-                .select('text')
-                .text();
-            time1 = firstPointData.x / 125;
-        }
+        const channel = isBottom ? fullSignalData.name : d3.select(firstPointElement.closest('.ecg-graph')).select('text').text();
+        const time1 = isBottom ? firstPointData.index / fullSignalData.samplingRate : firstPointData.x / 125;
 
         markupData.push({
             type: currentSelectedWaveType,
@@ -179,18 +181,13 @@ function handleKeyPress(e) {
 
 function clearSelection() {
     d3.selectAll('.ecg-point, .ecg-point-bottom')
-        .style('fill', 'transparent')
-        .attr('r', 4)
-        .style('stroke', 'none')
-        .style('stroke-width', '0');
+        .style('fill', 'transparent').attr('r', 4)
+        .style('stroke', 'none').style('stroke-width', '0')
+        .on('click.point-selection', null).style('cursor', '');
 
     ecgPointSelectionActive = firstPointSelected = false;
     firstPointData = firstPointElement = secondPointData = secondPointElement = null;
     document.body.style.cursor = '';
-
-    d3.selectAll('.ecg-point, .ecg-point-bottom')
-        .on('click.point-selection', null)
-        .style('cursor', '');
 
     document.removeEventListener('keydown', handleKeyPress);
     document.getElementById('markupPreview')?.remove();
@@ -205,19 +202,8 @@ function saveSinglePoint() {
     if (!firstPointSelected || !firstPointData) return;
 
     const isBottom = firstPointElement.classList.contains('ecg-point-bottom');
-
-    let channel;
-    let time1;
-
-    if (isBottom) {
-        channel = fullSignalData.name;
-        time1 = firstPointData.index / fullSignalData.samplingRate;
-    } else {
-        channel = d3.select(firstPointElement.closest('.ecg-graph'))
-            .select('text')
-            .text();
-        time1 = firstPointData.x / 125;
-    }
+    const channel = isBottom ? fullSignalData.name : d3.select(firstPointElement.closest('.ecg-graph')).select('text').text();
+    const time1 = isBottom ? firstPointData.index / fullSignalData.samplingRate : firstPointData.x / 125;
 
     markupData.push({
         type: currentSelectedWaveType,
@@ -233,7 +219,6 @@ function saveSinglePoint() {
     clearSelection();
 }
 
-// ==================== ФУНКЦИИ ТАБЛИЦЫ РАЗМЕТКИ ====================
 function updateMarkupTable() {
     const tb = document.getElementById('markupTableBody');
 
@@ -267,23 +252,12 @@ function updateMarkupTable() {
     document.getElementById('markupModeToggle').checked = false;
 }
 
-// ==================== ФУНКЦИИ ПОДСВЕТКИ ТОЧЕК ====================
 function clearHighlightedPoints() {
-    d3.selectAll('.ecg-graph .ecg-point')
-        .style('fill', 'transparent')
-        .attr('r', 4)
-        .style('stroke', null)
-        .style('stroke-width', null);
+    d3.selectAll('.ecg-graph .ecg-point, .ecg-point-bottom')
+        .style('fill', 'transparent').attr('r', 4)
+        .style('stroke', null).style('stroke-width', null);
 
-    d3.selectAll('.ecg-point-bottom')
-        .style('fill', 'transparent')
-        .attr('r', 4)
-        .style('stroke', null)
-        .style('stroke-width', null);
-
-    d3.selectAll('.ecg-line')
-        .style('stroke', '#2c6fbb')
-        .style('stroke-width', LINE_WIDTH);
+    d3.selectAll('.ecg-line').style('stroke', '#2c6fbb').style('stroke-width', 2);
 }
 
 function highlightMarkupPoints(index) {
@@ -293,104 +267,77 @@ function highlightMarkupPoints(index) {
 
     clearHighlightedPoints();
 
-    const isBottomLead = markup.lead === fullSignalData?.name;
+    if (markup.lead === fullSignalData?.name) {
+        const samplingRate = fullSignalData.samplingRate;
+        const index1 = Math.round(markup.time1 * samplingRate);
+        const index2 = markup.time2 > 0 ? Math.round(markup.time2 * samplingRate) : null;
 
-    if (isBottomLead) {
-        highlightPointsOnBottomGraph(markup);
-    } else {
-        highlightPointsOnTopGraphs(markup);
-    }
-}
-
-function highlightPointsOnBottomGraph(markup) {
-    if (!fullSignalData) return;
-
-    const samplingRate = fullSignalData.samplingRate;
-
-    const index1 = Math.round(markup.time1 * samplingRate);
-    const index2 = markup.time2 > 0 ? Math.round(markup.time2 * samplingRate) : null;
-
-    d3.selectAll('.ecg-point-bottom')
-        .filter(d => Math.abs(d.index - index1) === 0)
-        .style('fill', '#ff0000')
-        .attr('r', 6)
-        .style('stroke', '#ffffff')
-        .style('stroke-width', '2px');
-
-    if (index2 !== null) {
         d3.selectAll('.ecg-point-bottom')
-            .filter(d => Math.abs(d.index - index2) === 0)
-            .style('fill', '#0066cc')
-            .attr('r', 6)
-            .style('stroke', '#ffffff')
-            .style('stroke-width', '2px');
-    }
+            .filter(d => Math.abs(d.index - index1) === 0)
+            .style('fill', '#ff0000').attr('r', 6)
+            .style('stroke', '#ffffff').style('stroke-width', '2px');
 
-    if (index2 !== null) {
-        highlightLineBetweenPoints(index1, index2, true);
-    }
-}
-
-function highlightPointsOnTopGraphs(markup) {
-    const channelIndex = fullEcgData.channelNames.findIndex(name => name === markup.lead);
-    if (channelIndex === -1) return;
-
-    const containerId = channelIndex < 6 ? 'standard-leads' : 'chest-leads';
-    const graphIndex = channelIndex < 6 ? channelIndex : channelIndex - 6;
-
-    const container = document.getElementById(containerId);
-    if (!container) return;
-
-    const graphs = container.querySelectorAll('.ecg-graph');
-    if (graphIndex >= graphs.length) return;
-
-    const targetGraph = graphs[graphIndex];
-
-    const x1 = markup.time1 * 125;
-    const x2 = markup.time2 > 0 ? markup.time2 * 125 : null;
-
-    const points = d3.select(targetGraph).selectAll('.ecg-point').data();
-
-    const findPointByX = (targetX) => {
-        let closestPoint = null;
-        let minDiff = Infinity;
-
-        points.forEach(point => {
-            const diff = Math.abs(point.x - targetX);
-            if (diff < minDiff && diff < 2) {
-                minDiff = diff;
-                closestPoint = point;
-            }
-        });
-
-        return closestPoint;
-    };
-
-    const point1 = findPointByX(x1);
-    if (point1) {
-        d3.select(targetGraph).selectAll('.ecg-point')
-            .filter(d => d === point1)
-            .style('fill', '#ff0000')
-            .attr('r', 6)
-            .style('stroke', '#ffffff')
-            .style('stroke-width', '2px');
-    }
-
-    let point2 = null;
-    if (x2 !== null) {
-        point2 = findPointByX(x2);
-        if (point2) {
-            d3.select(targetGraph).selectAll('.ecg-point')
-                .filter(d => d === point2)
-                .style('fill', '#0066cc')
-                .attr('r', 6)
-                .style('stroke', '#ffffff')
-                .style('stroke-width', '2px');
+        if (index2 !== null) {
+            d3.selectAll('.ecg-point-bottom')
+                .filter(d => Math.abs(d.index - index2) === 0)
+                .style('fill', '#0066cc').attr('r', 6)
+                .style('stroke', '#ffffff').style('stroke-width', '2px');
+            highlightLineBetweenPoints(index1, index2, true);
         }
-    }
+    } else {
+        const channelIndex = fullEcgData.channelNames.findIndex(name => name === markup.lead);
+        if (channelIndex === -1) return;
 
-    if (x2 !== null && point1 && point2) {
-        highlightLineBetweenPoints(point1.x, point2.x, false, targetGraph);
+        const containerId = channelIndex < 6 ? 'standard-leads' : 'chest-leads';
+        const graphIndex = channelIndex < 6 ? channelIndex : channelIndex - 6;
+        const container = document.getElementById(containerId);
+        if (!container) return;
+
+        const graphs = container.querySelectorAll('.ecg-graph');
+        if (graphIndex >= graphs.length) return;
+
+        const targetGraph = graphs[graphIndex];
+        const x1 = markup.time1 * 125;
+        const x2 = markup.time2 > 0 ? markup.time2 * 125 : null;
+
+        const points = d3.select(targetGraph).selectAll('.ecg-point').data();
+
+        const findPointByX = (targetX) => {
+            let closestPoint = null;
+            let minDiff = Infinity;
+
+            points.forEach(point => {
+                const diff = Math.abs(point.x - targetX);
+                if (diff < minDiff && diff < 2) {
+                    minDiff = diff;
+                    closestPoint = point;
+                }
+            });
+
+            return closestPoint;
+        };
+
+        const point1 = findPointByX(x1);
+        if (point1) {
+            d3.select(targetGraph).selectAll('.ecg-point')
+                .filter(d => d === point1)
+                .style('fill', '#ff0000').attr('r', 6)
+                .style('stroke', '#ffffff').style('stroke-width', '2px');
+        }
+
+        if (x2 !== null) {
+            const point2 = findPointByX(x2);
+            if (point2) {
+                d3.select(targetGraph).selectAll('.ecg-point')
+                    .filter(d => d === point2)
+                    .style('fill', '#0066cc').attr('r', 6)
+                    .style('stroke', '#ffffff').style('stroke-width', '2px');
+            }
+
+            if (point1 && point2) {
+                highlightLineBetweenPoints(point1.x, point2.x, false, targetGraph);
+            }
+        }
     }
 }
 
@@ -421,7 +368,7 @@ function highlightLineBetweenPoints(pos1, pos2, isBottom, targetGraph = null) {
                         .curve(d3.curveMonotoneX))
                     .attr('fill', 'none')
                     .attr('stroke', '#ffaa00')
-                    .attr('stroke-width', LINE_WIDTH + 2)
+                    .attr('stroke-width', 4)
                     .attr('stroke-dasharray', '5,3');
             }
         }
@@ -453,7 +400,7 @@ function highlightLineBetweenPoints(pos1, pos2, isBottom, targetGraph = null) {
                         .curve(d3.curveMonotoneX))
                     .attr('fill', 'none')
                     .attr('stroke', '#ffaa00')
-                    .attr('stroke-width', LINE_WIDTH + 2)
+                    .attr('stroke-width', 4)
                     .attr('stroke-dasharray', '5,3');
             }
         }
@@ -462,17 +409,9 @@ function highlightLineBetweenPoints(pos1, pos2, isBottom, targetGraph = null) {
 
 const style = document.createElement('style');
 style.textContent = `
-    .markup-row:hover {
-        background-color: #f0f8ff;
-    }
-    .markup-row.selected-markup-row {
-        background-color: #e6f3ff;
-        border-left: 3px solid #2c6fbb;
-    }
-    .ecg-line-highlight {
-        pointer-events: none;
-        animation: pulse 1.5s infinite;
-    }
+    .markup-row:hover { background-color: #f0f8ff; }
+    .markup-row.selected-markup-row { background-color: #e6f3ff; border-left: 3px solid #2c6fbb; }
+    .ecg-line-highlight { pointer-events: none; animation: pulse 1.5s infinite; }
     @keyframes pulse {
         0% { stroke-opacity: 0.8; }
         50% { stroke-opacity: 0.4; }
@@ -481,7 +420,11 @@ style.textContent = `
 `;
 document.head.appendChild(style);
 
-// ==================== СОХРАНЕНИЕ РАЗМЕТОК ====================
+const getAuthHeaders = () => {
+    const token = localStorage.getItem('accessToken');
+    return token ? { 'Authorization': `Bearer ${token}` } : {};
+};
+
 async function saveAllMarkupPoints() {
     if (!markupData || markupData.length === 0) {
         alert('Нет точек для сохранения');
@@ -501,10 +444,10 @@ async function saveAllMarkupPoints() {
         saveBtn.textContent = 'Сохранение...';
         statusEl.textContent = 'Создание разметки...';
 
-        const createResponse = await authService.apiRequest(
-            `http://localhost:5104/api/MarkupJson/create-for-record/${currentRecord.recordId}`,
-            { method: 'POST' }
-        );
+        const createResponse = await fetch(`${API_BASE_URL}/markupjson/create-for-record/${currentRecord.recordId}`, {
+            method: 'POST',
+            headers: getAuthHeaders()
+        });
 
         if (!createResponse.ok) {
             throw new Error('Не удалось создать разметку');
@@ -553,26 +496,17 @@ async function saveAllMarkupPoints() {
         const blob = new Blob([JSON.stringify(markupJson)], { type: 'application/json' });
         formData.append('file', blob, `markup_${markupId}.json`);
 
-        const uploadResponse = await authService.apiRequest(
-            `http://localhost:5104/api/MarkupJson/upload/${markupId}`,
-            {
-                method: 'POST',
-                body: formData
-            }
-        );
+        const uploadResponse = await fetch(`${API_BASE_URL}/markupjson/upload/${markupId}`, {
+            method: 'POST',
+            headers: getAuthHeaders(),
+            body: formData
+        });
 
         if (!uploadResponse.ok) {
             throw new Error('Не удалось загрузить JSON');
         }
 
         const uploadResult = await uploadResponse.json();
-
-        console.log('Разметка сохранена:', {
-            markupId,
-            objectName: uploadResult.objectName,
-            fileSize: uploadResult.fileSize,
-            points: markupData.length
-        });
 
         if (confirm(`Разметка #${markupId} сохранена (${markupData.length} точек). Очистить таблицу?`)) {
             markupData = [];
@@ -581,7 +515,6 @@ async function saveAllMarkupPoints() {
         }
 
     } catch (error) {
-        console.error('Ошибка:', error);
         statusEl.textContent = 'Ошибка сохранения';
         alert('Ошибка при сохранении разметки: ' + error.message);
     } finally {
@@ -589,9 +522,7 @@ async function saveAllMarkupPoints() {
         saveBtn.textContent = 'Сохранить все';
     }
 }
-window.saveAllMarkupPoints = saveAllMarkupPoints;
 
-// ==================== ЗАГРУЗКА РАЗМЕТОК ====================
 async function loadRecordMarkups(recordId) {
     if (!recordId) {
         document.getElementById('markupsList').innerHTML = '<div class="no-data">Выберите запись</div>';
@@ -599,9 +530,9 @@ async function loadRecordMarkups(recordId) {
     }
 
     try {
-        const response = await authService.apiRequest(
-            `http://localhost:5104/api/MarkupJson/record-markups/${recordId}`
-        );
+        const response = await fetch(`${API_BASE_URL}/markupjson/record-markups/${recordId}`, {
+            headers: getAuthHeaders()
+        });
 
         if (!response.ok) {
             throw new Error('Не удалось загрузить разметки');
@@ -611,265 +542,8 @@ async function loadRecordMarkups(recordId) {
         displayMarkupsList(data.markups);
 
     } catch (error) {
-        console.error('Ошибка загрузки разметок:', error);
-        document.getElementById('markupsList').innerHTML =
-            '<div class="no-data error">Ошибка загрузки</div>';
+        document.getElementById('markupsList').innerHTML = '<div class="no-data error">Ошибка загрузки</div>';
     }
-}
-
-function displayMarkupsList(markups) {
-    const container = document.getElementById('markupsList');
-
-    if (!markups || markups.length === 0) {
-        container.innerHTML = '<div class="no-data">Нет разметок для этой записи</div>';
-        return;
-    }
-
-    container.innerHTML = markups.map(m => `
-        <div class="markup-card" id="markup-${m.idMarkup}" onclick="loadMarkupPoints(${m.idMarkup})">
-            <div class="markup-header">
-                <span>Разметка #${m.idMarkup}</span>
-                <span class="markup-badge">${formatFileSize(m.markupFileSize || 0)}</span>
-            </div>
-            <div class="markup-meta">
-                <span>📅 ${new Date(m.createdAt).toLocaleDateString('ru-RU')}</span>
-                <span>📄 ${m.markupOriginalFileName || 'без имени'}</span>
-            </div>
-            <div class="markup-preview">
-                <span class="markup-date">${new Date(m.createdAt).toLocaleString('ru-RU')}</span>
-            </div>
-        </div>
-    `).join('');
-}
-
-function selectMarkup(markupId) {
-    document.querySelectorAll('.markup-card').forEach(c => c.classList.remove('active'));
-    document.getElementById(`markup-${markupId}`)?.classList.add('active');
-}
-
-async function loadMarkupPoints(markupId) {
-    try {
-        const card = document.getElementById(`markup-${markupId}`);
-        if (card) {
-            card.style.opacity = '0.7';
-            card.style.pointerEvents = 'none';
-        }
-
-        const response = await authService.apiRequest(
-            `http://localhost:5104/api/MarkupJson/download/${markupId}`
-        );
-
-        if (!response.ok) throw new Error('Не удалось загрузить разметку');
-
-        const jsonContent = await response.text();
-        const markupData_ = JSON.parse(jsonContent);
-
-        markupData = [];
-
-        if (markupData_.points && Array.isArray(markupData_.points)) {
-            markupData = markupData_.points.map(p => ({
-                type: p.type || p.waveType || 'P',
-                lead: p.lead || 'Unknown',
-                time1: p.time1 || 0,
-                value1: p.value1 || p.value || 0,
-                time2: p.time2 || 0,
-                value2: p.value2 || 0,
-                comment: p.comment || ''
-            }));
-        }
-
-        updateMarkupTable();
-
-        selectMarkup(markupId);
-
-        console.log(`Загружено ${markupData.length} точек разметки`);
-
-        const tableContainer = document.querySelector('.markup-table-container');
-        if (tableContainer) {
-            tableContainer.style.transition = 'background 0.5s';
-            tableContainer.style.background = '#e8f5e8';
-            setTimeout(() => {
-                tableContainer.style.background = '';
-            }, 500);
-        }
-
-    } catch (error) {
-        console.error('Ошибка загрузки точек:', error);
-        alert('Не удалось загрузить точки разметки');
-    } finally {
-        const card = document.getElementById(`markup-${markupId}`);
-        if (card) {
-            card.style.opacity = '';
-            card.style.pointerEvents = '';
-        }
-    }
-}
-
-if (confirm(`Разметка #${markupId} сохранена (${markupData.length} точек). Очистить таблицу?`)) {
-    markupData = [];
-    updateMarkupTable();
-    statusEl.textContent = 'Готово. Таблица очищена';
-}
-
-async function handleLogout() {
-    if (confirm('Вы уверены, что хотите выйти?')) {
-        markupData = [];
-        updateMarkupTable();
-        currentRecord = null;
-        fullEcgData = null;
-        fullSignalData = null;
-        selectedChannelIndex = null;
-
-        await authService.logout();
-    }
-}
-
-// ==================== УДАЛЕНИЕ ЗАПИСЕЙ И РАЗМЕТОК ====================
-async function deleteRecord(recordId, event) {
-    if (event) {
-        event.stopPropagation();
-    }
-
-    if (!confirm('Вы уверены, что хотите удалить эту запись? Все связанные разметки также будут удалены.')) {
-        return;
-    }
-
-    const recordCard = document.getElementById(`record-${recordId}`);
-    const originalContent = recordCard.innerHTML;
-
-    try {
-        recordCard.style.opacity = '0.5';
-        recordCard.style.pointerEvents = 'none';
-        recordCard.innerHTML = '<div style="text-align:center;padding:20px;">Удаление...</div>';
-
-        const response = await authService.apiRequest(
-            `http://localhost:5104/api/NpyFiles/delete/${recordId}`,
-            { method: 'DELETE' }
-        );
-
-        if (!response.ok) {
-            throw new Error('Не удалось удалить запись');
-        }
-
-        const recordElement = document.getElementById(`record-${recordId}`);
-        if (recordElement) {
-            recordElement.remove();
-        }
-
-        if (currentRecord?.recordId === recordId) {
-            markupData = [];
-            updateMarkupTable();
-            currentRecord = null;
-            fullEcgData = null;
-            fullSignalData = null;
-            selectedChannelIndex = null;
-
-            document.getElementById('paramsData').innerHTML = '';
-            clearBottomGraph();
-
-            document.getElementById('markupsList').innerHTML = '<div class="no-data">Выберите запись</div>';
-        }
-
-        showNotification('Запись успешно удалена', 'success');
-
-    } catch (error) {
-        console.error('Ошибка удаления записи:', error);
-
-        recordCard.style.opacity = '';
-        recordCard.style.pointerEvents = '';
-        recordCard.innerHTML = originalContent;
-
-        showNotification('Ошибка при удалении записи: ' + error.message, 'error');
-    }
-}
-
-async function deleteMarkup(markupId, event) {
-    if (event) {
-        event.stopPropagation();
-    }
-
-    if (!confirm('Вы уверены, что хотите удалить эту разметку?')) {
-        return;
-    }
-
-    const markupCard = document.getElementById(`markup-${markupId}`);
-    const originalContent = markupCard.innerHTML;
-
-    try {
-        markupCard.style.opacity = '0.5';
-        markupCard.style.pointerEvents = 'none';
-        markupCard.innerHTML = '<div style="text-align:center;padding:10px;">Удаление...</div>';
-
-        const response = await authService.apiRequest(
-            `http://localhost:5104/api/MarkupJson/delete/${markupId}`,
-            { method: 'DELETE' }
-        );
-
-        if (!response.ok) {
-            throw new Error('Не удалось удалить разметку');
-        }
-
-        const markupElement = document.getElementById(`markup-${markupId}`);
-        if (markupElement) {
-            markupElement.remove();
-        }
-
-        const markupsList = document.getElementById('markupsList');
-        if (markupsList.children.length === 0) {
-            markupsList.innerHTML = '<div class="no-data">Нет разметок для этой записи</div>';
-        }
-
-        showNotification('Разметка успешно удалена', 'success');
-
-    } catch (error) {
-        console.error('Ошибка удаления разметки:', error);
-
-        markupCard.style.opacity = '';
-        markupCard.style.pointerEvents = '';
-        markupCard.innerHTML = originalContent;
-
-        showNotification('Ошибка при удалении разметки: ' + error.message, 'error');
-    }
-}
-
-function showNotification(message, type = 'info') {
-    const notification = document.createElement('div');
-    notification.className = `notification ${type}`;
-    notification.textContent = message;
-    notification.style.cssText = `
-        position: fixed;
-        top: 20px;
-        right: 20px;
-        padding: 15px 20px;
-        background-color: ${type === 'success' ? '#4CAF50' : type === 'error' ? '#f44336' : '#2196F3'};
-        color: white;
-        border-radius: 4px;
-        z-index: 1000;
-        animation: slideIn 0.3s ease;
-        box-shadow: 0 2px 5px rgba(0,0,0,0.2);
-    `;
-
-    document.body.appendChild(notification);
-
-    const style = document.createElement('style');
-    style.textContent = `
-        @keyframes slideIn {
-            from {
-                transform: translateX(100%);
-                opacity: 0;
-            }
-            to {
-                transform: translateX(0);
-                opacity: 1;
-            }
-        }
-    `;
-    document.head.appendChild(style);
-
-    setTimeout(() => {
-        notification.style.animation = 'slideIn 0.3s ease reverse';
-        setTimeout(() => notification.remove(), 300);
-    }, 3000);
 }
 
 function displayMarkupsList(markups) {
@@ -901,93 +575,223 @@ function displayMarkupsList(markups) {
     `).join('');
 }
 
+function selectMarkup(markupId) {
+    document.querySelectorAll('.markup-card').forEach(c => c.classList.remove('active'));
+    document.getElementById(`markup-${markupId}`)?.classList.add('active');
+}
+
+async function loadMarkupPoints(markupId) {
+    try {
+        const card = document.getElementById(`markup-${markupId}`);
+        if (card) {
+            card.style.opacity = '0.7';
+            card.style.pointerEvents = 'none';
+        }
+
+        const response = await fetch(`${API_BASE_URL}/markupjson/download/${markupId}`, {
+            headers: getAuthHeaders()
+        });
+
+        if (!response.ok) throw new Error('Не удалось загрузить разметку');
+
+        const jsonContent = await response.text();
+        const markupData_ = JSON.parse(jsonContent);
+
+        markupData = [];
+
+        if (markupData_.points && Array.isArray(markupData_.points)) {
+            markupData = markupData_.points.map(p => ({
+                type: p.type || p.waveType || 'P',
+                lead: p.lead || 'Unknown',
+                time1: p.time1 || 0,
+                value1: p.value1 || p.value || 0,
+                time2: p.time2 || 0,
+                value2: p.value2 || 0,
+                comment: p.comment || ''
+            }));
+        }
+
+        updateMarkupTable();
+        selectMarkup(markupId);
+
+        const tableContainer = document.querySelector('.markup-table-container');
+        if (tableContainer) {
+            tableContainer.style.transition = 'background 0.5s';
+            tableContainer.style.background = '#e8f5e8';
+            setTimeout(() => {
+                tableContainer.style.background = '';
+            }, 500);
+        }
+
+    } catch (error) {
+        alert('Не удалось загрузить точки разметки');
+    } finally {
+        const card = document.getElementById(`markup-${markupId}`);
+        if (card) {
+            card.style.opacity = '';
+            card.style.pointerEvents = '';
+        }
+    }
+}
+
+async function deleteRecord(recordId, event) {
+    if (event) event.stopPropagation();
+
+    if (!confirm('Вы уверены, что хотите удалить эту запись? Все связанные разметки также будут удалены.')) {
+        return;
+    }
+
+    const recordCard = document.getElementById(`record-${recordId}`);
+    const originalContent = recordCard.innerHTML;
+
+    try {
+        recordCard.style.opacity = '0.5';
+        recordCard.style.pointerEvents = 'none';
+        recordCard.innerHTML = '<div style="text-align:center;padding:20px;">Удаление...</div>';
+
+        const response = await fetch(`${API_BASE_URL}/npyfiles/delete/${recordId}`, {
+            method: 'DELETE',
+            headers: getAuthHeaders()
+        });
+
+        if (!response.ok) {
+            throw new Error('Не удалось удалить запись');
+        }
+
+        const recordElement = document.getElementById(`record-${recordId}`);
+        if (recordElement) recordElement.remove();
+
+        if (currentRecord?.recordId === recordId) {
+            markupData = [];
+            updateMarkupTable();
+            currentRecord = null;
+            fullEcgData = null;
+            fullSignalData = null;
+            selectedChannelIndex = null;
+
+            document.getElementById('paramsData').innerHTML = '';
+            document.getElementById('markupsList').innerHTML = '<div class="no-data">Выберите запись</div>';
+            clearBottomGraph();
+        }
+
+        showNotification('Запись успешно удалена', 'success');
+
+    } catch (error) {
+        recordCard.style.opacity = '';
+        recordCard.style.pointerEvents = '';
+        recordCard.innerHTML = originalContent;
+        showNotification('Ошибка при удалении записи: ' + error.message, 'error');
+    }
+}
+
+async function deleteMarkup(markupId, event) {
+    if (event) event.stopPropagation();
+
+    if (!confirm('Вы уверены, что хотите удалить эту разметку?')) return;
+
+    const markupCard = document.getElementById(`markup-${markupId}`);
+    const originalContent = markupCard.innerHTML;
+
+    try {
+        markupCard.style.opacity = '0.5';
+        markupCard.style.pointerEvents = 'none';
+        markupCard.innerHTML = '<div style="text-align:center;padding:10px;">Удаление...</div>';
+
+        const response = await fetch(`${API_BASE_URL}/markupjson/delete/${markupId}`, {
+            method: 'DELETE',
+            headers: getAuthHeaders()
+        });
+
+        if (!response.ok) throw new Error('Не удалось удалить разметку');
+
+        const markupElement = document.getElementById(`markup-${markupId}`);
+        if (markupElement) markupElement.remove();
+
+        const markupsList = document.getElementById('markupsList');
+        if (markupsList.children.length === 0) {
+            markupsList.innerHTML = '<div class="no-data">Нет разметок для этой записи</div>';
+        }
+
+        showNotification('Разметка успешно удалена', 'success');
+
+    } catch (error) {
+        markupCard.style.opacity = '';
+        markupCard.style.pointerEvents = '';
+        markupCard.innerHTML = originalContent;
+        showNotification('Ошибка при удалении разметки: ' + error.message, 'error');
+    }
+}
+
 async function loadDoctorRecords() {
     try {
-        console.log('loadDoctorRecords started');
-
         if (!currentDoctorId) {
-            console.log('No currentDoctorId, getting from auth');
-            const u = await authService.getCurrentUser();
-            console.log('Auth user:', u);
+            const response = await fetch(`${API_BASE_URL}/auth/me`, {
+                headers: getAuthHeaders()
+            });
 
-            if (u?.idDoctor) {
-                currentDoctorId = u.idDoctor;
-                console.log('Set currentDoctorId:', currentDoctorId);
+            if (response.ok) {
+                const u = await response.json();
+                if (u?.idDoctor) {
+                    currentDoctorId = u.idDoctor;
+                } else {
+                    return showError('Не удалось загрузить данные врача');
+                }
             } else {
-                console.error('No doctor ID in auth response');
                 return showError('Не удалось загрузить данные врача');
             }
         }
 
-        console.log('Fetching records for doctor:', currentDoctorId);
-        console.log('Request URL:', `${baseUrl}/doctor-records/${currentDoctorId}`);
+        const r = await fetch(`${API_BASE_URL}/npyfiles/doctor-records/${currentDoctorId}`, {
+            headers: getAuthHeaders()
+        });
 
-        const r = await authService.apiRequest(`${baseUrl}/doctor-records/${currentDoctorId}`);
-        console.log('Response status:', r?.status);
-
-        if (!r?.ok) {
-            console.error('Response not OK:', r?.status, r?.statusText);
-            return showError('Не удалось загрузить список записей');
-        }
+        if (!r?.ok) return showError('Не удалось загрузить список записей');
 
         const records = await r.json();
-        console.log('Records received:', records);
-
         const list = document.getElementById('recordsList');
-        if (!list) {
-            console.error('recordsList element not found');
-            return;
-        }
+
+        if (!list) return;
 
         if (!records?.length) {
-            console.log('No records found');
             list.innerHTML = '<div class="no-data">Записей не найдено</div>';
             return;
         }
 
-        list.innerHTML = records.map(r => {
-            console.log('Processing record:', r);
-            return `
-                <div class="record-card" id="record-${r.recordId}">
-                    <div class="record-header" onclick="loadRecord(${r.recordId})" style="cursor: pointer;">
-                        ЭКГ #${r.recordId}
-                        <button class="delete-record-btn" onclick="deleteRecord(${r.recordId}, event)" 
-                                style="background-color: #f44336; color: white; border: none; border-radius: 3px; padding: 2px 6px; cursor: pointer; font-size: 10px; margin-left: 10px;">
-                            Удалить
-                        </button>
-                    </div>
-                    <div class="record-meta" onclick="loadRecord(${r.recordId})" style="cursor: pointer;">
-                        ${new Date(r.uploadedAt).toLocaleDateString('ru-RU')} ${new Date(r.uploadedAt).toLocaleTimeString('ru-RU')}
-                    </div>
-                    <div class="record-meta" onclick="loadRecord(${r.recordId})" style="cursor: pointer;">
-                        ${formatFileSize(r.fileSize)}
-                    </div>
+        list.innerHTML = records.map(r => `
+            <div class="record-card" id="record-${r.recordId}">
+                <div class="record-header" onclick="loadRecord(${r.recordId})" style="cursor: pointer;">
+                    ЭКГ #${r.recordId}
+                    <button class="delete-record-btn" onclick="deleteRecord(${r.recordId}, event)" 
+                            style="background-color: #f44336; color: white; border: none; border-radius: 3px; padding: 2px 6px; cursor: pointer; font-size: 10px; margin-left: 10px;">
+                        Удалить
+                    </button>
                 </div>
-            `;
-        }).join('');
-
-        console.log('Records list updated successfully');
+                <div class="record-meta" onclick="loadRecord(${r.recordId})" style="cursor: pointer;">
+                    ${new Date(r.uploadedAt).toLocaleDateString('ru-RU')} ${new Date(r.uploadedAt).toLocaleTimeString('ru-RU')}
+                </div>
+                <div class="record-meta" onclick="loadRecord(${r.recordId})" style="cursor: pointer;">
+                    ${formatFileSize(r.fileSize)}
+                </div>
+            </div>
+        `).join('');
 
     } catch (error) {
-        console.error('ERROR in loadDoctorRecords:', error);
-        console.error('Error stack:', error.stack);
         showError('Ошибка при загрузке списка записей: ' + error.message);
     }
 }
 
 async function loadRecord(recordId) {
     try {
-        console.log('Loading record:', recordId);
-
         destroyZoomHandlers();
         currentZoomState = null;
-
         clearBottomGraph();
-
         markupData = [];
         updateMarkupTable();
 
-        const r = await authService.apiRequest(`${baseUrl}/info/${recordId}`);
+        const r = await fetch(`${API_BASE_URL}/npyfiles/info/${recordId}`, {
+            headers: getAuthHeaders()
+        });
+
         if (!r?.ok) return;
 
         currentRecord = await r.json();
@@ -1024,9 +828,10 @@ async function loadRecord(recordId) {
 
 async function loadParsedEcgData(recordId) {
     try {
-        console.log('Loading parsed ECG data for record:', recordId);
+        const r = await fetch(`${API_BASE_URL}/npyfiles/ecg-data/${recordId}`, {
+            headers: getAuthHeaders()
+        });
 
-        const r = await authService.apiRequest(`${baseUrl}/ecg-data/${recordId}`);
         if (!r?.ok) return showError('Failed to load ECG data');
 
         const d = JSON.parse(await r.text());
@@ -1049,9 +854,7 @@ async function loadParsedEcgData(recordId) {
         if (!sel) return;
 
         sel.innerHTML = '<option value="">-- Выберите канал --</option>' +
-            (fullEcgData.channelNames
-                ?.map((n, i) => `<option value="${i}">${n}</option>`)
-                .join('') || '');
+            (fullEcgData.channelNames?.map((n, i) => `<option value="${i}">${n}</option>`).join('') || '');
 
         sel.onchange = e => {
             if (!e.target.value) {
@@ -1075,7 +878,6 @@ async function loadParsedEcgData(recordId) {
     }
 }
 
-// ==================== ЗАГРУЗКА ФАЙЛОВ ====================
 async function handleFileUpload(files) {
     if (!files || files.length === 0) return;
 
@@ -1094,20 +896,18 @@ async function handleFileUpload(files) {
 
     for (let file of files) {
         try {
-            const createResponse = await authService.apiRequest(
-                'http://localhost:5104/api/npyfiles/create-record',
-                {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({
-                        idDoctor: currentDoctorId,
-                        rc: 0,
-                        type: 1
-                    })
-                }
-            );
+            const createResponse = await fetch(`${API_BASE_URL}/npyfiles/create-record`, {
+                method: 'POST',
+                headers: {
+                    ...getAuthHeaders(),
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    idDoctor: currentDoctorId,
+                    rc: 0,
+                    type: 1
+                })
+            });
 
             if (!createResponse.ok) {
                 throw new Error(`Ошибка создания записи для файла ${file.name}`);
@@ -1119,25 +919,20 @@ async function handleFileUpload(files) {
             const formData = new FormData();
             formData.append('file', file);
 
-            const uploadResponse = await authService.apiRequest(
-                `http://localhost:5104/api/npyfiles/upload/${recordId}`,
-                {
-                    method: 'POST',
-                    body: formData
-                }
-            );
+            const uploadResponse = await fetch(`${API_BASE_URL}/npyfiles/upload/${recordId}`, {
+                method: 'POST',
+                headers: getAuthHeaders(),
+                body: formData
+            });
 
             if (uploadResponse.ok) {
                 successCount++;
-                console.log(`Файл ${file.name} успешно загружен как запись #${recordId}`);
             } else {
                 errorCount++;
-                console.error(`Ошибка загрузки файла ${file.name}`);
             }
 
         } catch (error) {
             errorCount++;
-            console.error(`Ошибка при обработке файла ${file.name}:`, error);
         }
     }
 
@@ -1151,8 +946,45 @@ async function handleFileUpload(files) {
     }
 }
 
-// ==================== ВЫХОД ====================
 async function handleLogout() {
-    if (confirm('Вы уверены, что хотите выйти?'))
-        await authService.logout();
+    if (confirm('Вы уверены, что хотите выйти?')) {
+        markupData = [];
+        updateMarkupTable();
+        currentRecord = null;
+        fullEcgData = null;
+        fullSignalData = null;
+        selectedChannelIndex = null;
+
+        localStorage.removeItem('accessToken');
+        localStorage.removeItem('refreshToken');
+        window.location.href = 'login.html';
+    }
 }
+
+document.addEventListener('DOMContentLoaded', async () => {
+    await loadDoctorRecords();
+    setTimeout(createEcgGrids, 500);
+
+    document.querySelectorAll('input[name="wave-type"]')
+        .forEach(s => s.addEventListener('change', function () {
+            if (this.checked) currentSelectedWaveType = this.value;
+        }));
+
+    document.getElementById('markupModeToggle')
+        ?.addEventListener('change', function () {
+            this.checked ? initializePointSelection() : cancelPointSelection();
+        });
+});
+
+window.loadRecord = loadRecord;
+window.loadDoctorRecords = loadDoctorRecords;
+window.handleLogout = handleLogout;
+window.loadRecordMarkups = loadRecordMarkups;
+window.selectMarkup = selectMarkup;
+window.loadMarkupPoints = loadMarkupPoints;
+window.saveAllMarkupPoints = saveAllMarkupPoints;
+window.cancelPointSelection = cancelPointSelection;
+window.saveSinglePoint = saveSinglePoint;
+window.destroyZoomHandlers = destroyZoomHandlers;
+window.deleteRecord = deleteRecord;
+window.deleteMarkup = deleteMarkup;

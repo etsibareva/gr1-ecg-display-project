@@ -22,37 +22,34 @@ namespace DataAccess.Services
         public string SecretKey { get; set; } = string.Empty;
         public bool WithSSL { get; set; }
 
-        /* (!) Избавиться от значения по умолчанию (!) */
-        public string BucketName { get; set; } = "signals";
-
-        public string MarkupBucketName { get; set; } = "markups";
+        public string SignalsBucketName { get; set; } = "tea-segmentator-signals";
+        public string MarkupsBucketName { get; set; } = "tea-segmentator-markups";
     }
 
     public partial class NpyFileService
     {
-        private readonly string bucketName;
+        private readonly string signalsBucketName;
         private const string NPY_CONTENT_TYPE = "application/octet-stream";
         private readonly ILogger<NpyFileService> logger;
         private readonly IMinioClient minioClient;
 
         public NpyFileService(IOptions<MinioOptions> minioOptions, ILogger<NpyFileService> _logger)
         {
-            /* (!) Избавиться от всех значений по умолчанию. Тестировать. (!) */
             var endpoint = Environment.GetEnvironmentVariable("MINIO_ENDPOINT") ?? "localhost:9000";
-            
+
             var accessKey = Environment.GetEnvironmentVariable("MINIO_ACCESS_KEY")
                 ?? throw new ArgumentNullException("MINIO_ACCESS_KEY not set");
-            
+
             var secretKey = Environment.GetEnvironmentVariable("MINIO_SECRET_KEY")
                 ?? throw new ArgumentNullException("MINIO_SECRET_KEY not set");
-            
-            bucketName = Environment.GetEnvironmentVariable("MINIO_BUCKET_NAME") ?? "signals";
-            /* (!) */
+
+            signalsBucketName = Environment.GetEnvironmentVariable("MINIO_SIGNALS_BUCKET_NAME")
+                ?? minioOptions.Value.SignalsBucketName;
 
             minioClient = new MinioClient()
                 .WithEndpoint(endpoint)
                 .WithCredentials(accessKey, secretKey)
-                .WithSSL(false) 
+                .WithSSL(false)
                 .Build();
 
             logger = _logger;
@@ -62,19 +59,27 @@ namespace DataAccess.Services
         {
             try
             {
-                var bucketExistsArgs = new BucketExistsArgs().WithBucket(bucketName);
+                var bucketExistsArgs = new BucketExistsArgs().WithBucket(signalsBucketName);
                 bool found = await minioClient.BucketExistsAsync(bucketExistsArgs);
-                var makeBucketArgs = new MakeBucketArgs().WithBucket(bucketName);
-                await minioClient.MakeBucketAsync(makeBucketArgs);
+
+                if (!found)
+                {
+                    var makeBucketArgs = new MakeBucketArgs().WithBucket(signalsBucketName);
+                    await minioClient.MakeBucketAsync(makeBucketArgs);
+                    logger.LogInformation("Bucket {BucketName} created", signalsBucketName);
+                }
+                else
+                {
+                    logger.LogInformation("Bucket {BucketName} already exists", signalsBucketName);
+                }
             }
             catch (Exception ex)
             {
-                logger.LogError(ex, "Error initializing MinIO bucket");
+                logger.LogError(ex, "Error initializing MinIO bucket {BucketName}", signalsBucketName);
                 throw;
             }
         }
 
-        /* Загрузка файла NPY в виде массива байт */
         public async Task<string> SaveNpyDataAsync(byte[] npyData, string fileName)
         {
             try
@@ -84,7 +89,7 @@ namespace DataAccess.Services
                 using var stream = new MemoryStream(npyData);
 
                 var putObjectArgs = new PutObjectArgs()
-                    .WithBucket(bucketName)
+                    .WithBucket(signalsBucketName)
                     .WithObject(objectName)
                     .WithStreamData(stream)
                     .WithObjectSize(stream.Length)
@@ -101,7 +106,6 @@ namespace DataAccess.Services
             }
         }
 
-        /* Получение файла NPY в виде массива байт */
         public async Task<byte[]> LoadNpyDataAsync(string objectName)
         {
             try
@@ -109,7 +113,7 @@ namespace DataAccess.Services
                 using var memoryStream = new MemoryStream();
 
                 var getObjectArgs = new GetObjectArgs()
-                    .WithBucket(bucketName)
+                    .WithBucket(signalsBucketName)
                     .WithObject(objectName)
                     .WithCallbackStream(stream => stream.CopyTo(memoryStream));
 
@@ -125,13 +129,12 @@ namespace DataAccess.Services
             }
         }
 
-        /* Возврат ссылки на скачивание */
         public async Task<string> GetNpyFileUrlAsync(string objectName, int expiryMinutes = 60)
         {
             try
             {
                 var presignedGetObjectArgs = new PresignedGetObjectArgs()
-                    .WithBucket(bucketName)
+                    .WithBucket(signalsBucketName)
                     .WithObject(objectName)
                     .WithExpiry(expiryMinutes * 60);
 
@@ -145,13 +148,12 @@ namespace DataAccess.Services
             }
         }
 
-        /* Удаление записи в MinIO */
         public async Task<bool> DeleteNpyDataAsync(string objectName)
         {
             try
             {
                 var removeObjectArgs = new RemoveObjectArgs()
-                    .WithBucket(bucketName)
+                    .WithBucket(signalsBucketName)
                     .WithObject(objectName);
 
                 await minioClient.RemoveObjectAsync(removeObjectArgs);

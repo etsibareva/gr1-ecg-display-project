@@ -1,16 +1,12 @@
-﻿// ==================== КОНСТАНТЫ ====================
-const displaySeconds = 6;
+﻿const displaySeconds = 6;
 const LINE_WIDTH = 0.7;
-const baseUrl = 'http://localhost:5104/api/npyfiles';
 
-// ==================== ГЛОБАЛЬНЫЕ ПЕРЕМЕННЫЕ ====================
 let containerZoomHandlers = [];
 let bottomZoomHandler = null;
 let currentZoomState = null;
 let resizeTimeout = null;
 let refreshTimeout = null;
 
-// ==================== ФУНКЦИИ ОБНОВЛЕНИЯ ====================
 function refreshAllDisplays(resetZoomState = false) {
     console.log('Refreshing all displays...', resetZoomState ? 'with zoom reset' : 'preserving zoom');
 
@@ -23,7 +19,6 @@ function refreshAllDisplays(resetZoomState = false) {
     }
 
     destroyZoomHandlers();
-
     createEcgGrids();
 
     setTimeout(() => {
@@ -93,7 +88,6 @@ function resetZoom() {
     currentZoomState = null;
 }
 
-// ==================== КЛАСС ЗУМА ДЛЯ ВЕРХНИХ КОНТЕЙНЕРОВ ====================
 class ContainerZoomHandler {
     constructor(containerIds) {
         this.containerIds = containerIds;
@@ -262,7 +256,6 @@ class ContainerZoomHandler {
     }
 }
 
-// ==================== КЛАСС ЗУМА ДЛЯ НИЖНЕГО ГРАФИКА ====================
 class BottomZoomHandler {
     constructor(containerId) {
         this.containerId = containerId;
@@ -395,7 +388,6 @@ class BottomZoomHandler {
     }
 }
 
-// ==================== ФУНКЦИИ ОТОБРАЖЕНИЯ ====================
 function displayAllChannelsD3() {
     d3.select("body").selectAll(".ecg-tooltip").remove();
 
@@ -684,7 +676,6 @@ function clearBottomGraph() {
     }
 }
 
-// ==================== ФУНКЦИИ СОЗДАНИЯ СЕТОК ====================
 function createEcgGrids() {
     console.log('Creating ECG grids...');
 
@@ -838,7 +829,6 @@ function createGridForContainer(containerId, channelNames) {
     });
 }
 
-// ==================== ОБРАБОТЧИКИ СОБЫТИЙ ====================
 window.addEventListener('load', () => {
     setTimeout(() => {
         createEcgGrids();

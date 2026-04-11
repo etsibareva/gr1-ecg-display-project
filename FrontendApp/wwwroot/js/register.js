@@ -1,7 +1,6 @@
-﻿// js/Register.js
-class RegisterService {
+﻿class RegisterService {
     constructor() {
-        this.baseUrl = 'http://localhost:5104/api/auth';
+        this.baseUrl = '/api/auth';
     }
 
     async register(userData) {
@@ -41,7 +40,6 @@ class RegisterService {
 
 const registerService = new RegisterService();
 
-// Обработчик формы регистрации
 document.addEventListener('DOMContentLoaded', function () {
     const registerForm = document.getElementById('registerForm');
     const errorMessage = document.getElementById('errorMessage');
@@ -50,7 +48,6 @@ document.addEventListener('DOMContentLoaded', function () {
         registerForm.addEventListener('submit', async function (e) {
             e.preventDefault();
 
-            // Собираем данные формы
             const userData = {
                 firstName: document.getElementById('firstName').value,
                 lastName: document.getElementById('lastName').value,
@@ -65,14 +62,11 @@ document.addEventListener('DOMContentLoaded', function () {
             submitBtn.textContent = 'Регистрация...';
             submitBtn.disabled = true;
 
-            if (errorMessage) {
-                errorMessage.style.display = 'none';
-            }
+            if (errorMessage) errorMessage.style.display = 'none';
 
             const result = await registerService.register(userData);
 
             if (result.success) {
-                // После успешной регистрации - на страницу логина
                 alert('Регистрация успешна! Теперь войдите в систему.');
                 window.location.href = 'login.html';
             } else {

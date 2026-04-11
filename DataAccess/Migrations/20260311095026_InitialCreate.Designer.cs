@@ -12,8 +12,8 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace DataAccess.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20250929150234_AddMarkupAndRecordTablesWithJsonb")]
-    partial class AddMarkupAndRecordTablesWithJsonb
+    [Migration("20260311095026_InitialCreate")]
+    partial class InitialCreate
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -65,6 +65,77 @@ namespace DataAccess.Migrations
                     b.ToTable("doctors");
                 });
 
+            modelBuilder.Entity("DataAccess.Model.Markup", b =>
+                {
+                    b.Property<int>("IdMarkup")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("IdMarkup"));
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int>("IdRecord")
+                        .HasColumnType("integer");
+
+                    b.Property<long?>("MarkupFileSize")
+                        .HasColumnType("bigint");
+
+                    b.Property<string>("MarkupObjectName")
+                        .HasColumnType("text");
+
+                    b.Property<string>("MarkupOriginalFileName")
+                        .HasColumnType("text");
+
+                    b.Property<DateTime?>("MarkupUploadedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("IdMarkup");
+
+                    b.HasIndex("IdRecord");
+
+                    b.ToTable("markups");
+                });
+
+            modelBuilder.Entity("DataAccess.Model.Record", b =>
+                {
+                    b.Property<int>("IdRecord")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("IdRecord"));
+
+                    b.Property<int>("IdDoctor")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("RC")
+                        .HasColumnType("integer");
+
+                    b.Property<long>("SignalFileSize")
+                        .HasColumnType("bigint");
+
+                    b.Property<string>("SignalObjectName")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("SignalOriginalFileName")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<DateTime>("SignalUploadedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int>("Type")
+                        .HasColumnType("integer");
+
+                    b.HasKey("IdRecord");
+
+                    b.HasIndex("IdDoctor");
+
+                    b.ToTable("records");
+                });
+
             modelBuilder.Entity("DataAccess.Model.RefreshToken", b =>
                 {
                     b.Property<int>("IdRefreshToken")
@@ -96,6 +167,28 @@ namespace DataAccess.Migrations
                     b.ToTable("refreshTokens");
                 });
 
+            modelBuilder.Entity("DataAccess.Model.Markup", b =>
+                {
+                    b.HasOne("DataAccess.Model.Record", "Record")
+                        .WithMany("Markups")
+                        .HasForeignKey("IdRecord")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Record");
+                });
+
+            modelBuilder.Entity("DataAccess.Model.Record", b =>
+                {
+                    b.HasOne("DataAccess.Model.Doctor", "Doctor")
+                        .WithMany()
+                        .HasForeignKey("IdDoctor")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Doctor");
+                });
+
             modelBuilder.Entity("DataAccess.Model.RefreshToken", b =>
                 {
                     b.HasOne("DataAccess.Model.Doctor", "Doctor")
@@ -110,6 +203,11 @@ namespace DataAccess.Migrations
             modelBuilder.Entity("DataAccess.Model.Doctor", b =>
                 {
                     b.Navigation("RefreshTokens");
+                });
+
+            modelBuilder.Entity("DataAccess.Model.Record", b =>
+                {
+                    b.Navigation("Markups");
                 });
 #pragma warning restore 612, 618
         }

@@ -9,7 +9,7 @@ namespace DataAccess.Services
 {
     public class MarkupJsonService
     {
-        private readonly string markupBucketName;
+        private readonly string markupsBucketName;
         private const string JSON_CONTENT_TYPE = "application/json";
         private readonly ILogger<MarkupJsonService> logger;
         private readonly IMinioClient minioClient;
@@ -22,8 +22,8 @@ namespace DataAccess.Services
             var secretKey = Environment.GetEnvironmentVariable("MINIO_SECRET_KEY")
                 ?? throw new ArgumentNullException("MINIO_SECRET_KEY not set");
 
-            markupBucketName = Environment.GetEnvironmentVariable("MINIO_MARKUP_BUCKET_NAME")
-                ?? minioOptions.Value.MarkupBucketName;
+            markupsBucketName = Environment.GetEnvironmentVariable("MINIO_MARKUPS_BUCKET_NAME")
+                ?? minioOptions.Value.MarkupsBucketName;
 
             minioClient = new MinioClient()
                 .WithEndpoint(endpoint)
@@ -38,14 +38,14 @@ namespace DataAccess.Services
         {
             try
             {
-                var bucketExistsArgs = new BucketExistsArgs().WithBucket(markupBucketName);
+                var bucketExistsArgs = new BucketExistsArgs().WithBucket(markupsBucketName);
                 bool found = await minioClient.BucketExistsAsync(bucketExistsArgs);
 
                 if (!found)
                 {
-                    var makeBucketArgs = new MakeBucketArgs().WithBucket(markupBucketName);
+                    var makeBucketArgs = new MakeBucketArgs().WithBucket(markupsBucketName);
                     await minioClient.MakeBucketAsync(makeBucketArgs);
-                    logger.LogInformation("Bucket {BucketName} created", markupBucketName);
+                    logger.LogInformation("Bucket {BucketName} created", markupsBucketName);
                 }
             }
             catch (Exception ex)
@@ -55,7 +55,6 @@ namespace DataAccess.Services
             }
         }
 
-        /* Сохранение JSON строки */
         public async Task<(string objectName, long fileSize)> SaveJsonAsync(string jsonContent, int markupId)
         {
             try
@@ -66,7 +65,7 @@ namespace DataAccess.Services
                 using var stream = new MemoryStream(byteArray);
 
                 var putObjectArgs = new PutObjectArgs()
-                    .WithBucket(markupBucketName)
+                    .WithBucket(markupsBucketName)
                     .WithObject(objectName)
                     .WithStreamData(stream)
                     .WithObjectSize(stream.Length)
@@ -86,7 +85,6 @@ namespace DataAccess.Services
             }
         }
 
-        /* Сохранение объекта как JSON */
         public async Task<(string objectName, long fileSize)> SaveObjectAsJsonAsync<T>(T obj, int markupId)
         {
             var jsonContent = JsonSerializer.Serialize(obj, new JsonSerializerOptions
@@ -97,7 +95,6 @@ namespace DataAccess.Services
             return await SaveJsonAsync(jsonContent, markupId);
         }
 
-        /* Загрузка JSON строки */
         public async Task<string> LoadJsonAsync(string objectName)
         {
             try
@@ -105,7 +102,7 @@ namespace DataAccess.Services
                 using var memoryStream = new MemoryStream();
 
                 var getObjectArgs = new GetObjectArgs()
-                    .WithBucket(markupBucketName)
+                    .WithBucket(markupsBucketName)
                     .WithObject(objectName)
                     .WithCallbackStream(stream => stream.CopyTo(memoryStream));
 
@@ -125,7 +122,6 @@ namespace DataAccess.Services
             }
         }
 
-        /* Загрузка и десериализация JSON в объект */
         public async Task<T> LoadJsonAsObjectAsync<T>(string objectName)
         {
             var jsonContent = await LoadJsonAsync(objectName);
@@ -133,13 +129,12 @@ namespace DataAccess.Services
                 ?? throw new InvalidOperationException("Failed to deserialize JSON");
         }
 
-        /* Получение URL для скачивания */
         public async Task<string> GetJsonFileUrlAsync(string objectName, int expiryMinutes = 60)
         {
             try
             {
                 var presignedGetObjectArgs = new PresignedGetObjectArgs()
-                    .WithBucket(markupBucketName)
+                    .WithBucket(markupsBucketName)
                     .WithObject(objectName)
                     .WithExpiry(expiryMinutes * 60);
 
@@ -153,13 +148,12 @@ namespace DataAccess.Services
             }
         }
 
-        /* Удаление JSON файла */
         public async Task<bool> DeleteJsonAsync(string objectName)
         {
             try
             {
                 var removeObjectArgs = new RemoveObjectArgs()
-                    .WithBucket(markupBucketName)
+                    .WithBucket(markupsBucketName)
                     .WithObject(objectName);
 
                 await minioClient.RemoveObjectAsync(removeObjectArgs);
@@ -174,13 +168,12 @@ namespace DataAccess.Services
             }
         }
 
-        /* Проверка существования файла */
         public async Task<bool> JsonExistsAsync(string objectName)
         {
             try
             {
                 var statObjectArgs = new StatObjectArgs()
-                    .WithBucket(markupBucketName)
+                    .WithBucket(markupsBucketName)
                     .WithObject(objectName);
 
                 var stat = await minioClient.StatObjectAsync(statObjectArgs);

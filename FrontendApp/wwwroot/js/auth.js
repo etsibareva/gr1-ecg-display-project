@@ -1,6 +1,6 @@
 ﻿class AuthService {
     constructor() {
-        this.baseUrl = 'http://localhost:5104/api/auth';
+        this.baseUrl = '/api/auth';
         this.accessToken = localStorage.getItem('accessToken');
         this.refreshToken = localStorage.getItem('refreshToken');
     }
@@ -20,32 +20,22 @@
     }
 
     async apiRequest(url, options = {}) {
-        // 1. Готовим headers
         const headers = { ...options.headers };
-
-        // 2. Проверяем FormData
         const isFormData = options.body instanceof FormData;
 
-        // 3. Добавляем Content-Type только если НЕ FormData
         if (!isFormData && !headers['Content-Type']) {
             headers['Content-Type'] = 'application/json';
         }
 
-        // 4. Добавляем токен
         if (this.accessToken) {
             headers['Authorization'] = `Bearer ${this.accessToken}`;
         }
 
-        // 5. Готовим config для fetch
-        const config = {
-            ...options,
-            headers
-        };
+        const config = { ...options, headers };
 
         try {
             const response = await fetch(url, config);
 
-            // Обработка 401
             if (response.status === 401 && this.refreshToken) {
                 const refreshed = await this.refreshTokens();
                 if (refreshed) {
@@ -68,9 +58,7 @@
         try {
             const response = await fetch(`${this.baseUrl}/refresh`, {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
+                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(this.refreshToken)
             });
 
@@ -93,9 +81,7 @@
         try {
             const response = await fetch(`${this.baseUrl}/login`, {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
+                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ login, password })
             });
 
@@ -115,9 +101,7 @@
 
     async logout() {
         try {
-            await this.apiRequest(`${this.baseUrl}/logout`, {
-                method: 'POST'
-            });
+            await this.apiRequest(`${this.baseUrl}/logout`, { method: 'POST' });
         } catch (error) {
             console.error('Logout error:', error);
         } finally {
@@ -129,7 +113,6 @@
     async getCurrentUser() {
         try {
             const response = await this.apiRequest(`${this.baseUrl}/me`);
-
             if (response && response.ok) {
                 return await response.json();
             }
@@ -171,9 +154,7 @@ document.addEventListener('DOMContentLoaded', function () {
             submitBtn.textContent = 'Вход...';
             submitBtn.disabled = true;
 
-            if (errorMessage) {
-                errorMessage.style.display = 'none';
-            }
+            if (errorMessage) errorMessage.style.display = 'none';
 
             const result = await authService.login(login, password);
 
