@@ -83,14 +83,8 @@
                             <input type="radio" id="wave-P" name="wave-type" value="P" checked>
                             <label for="wave-P">P</label>
 
-                            <input type="radio" id="wave-Q" name="wave-type" value="Q">
-                            <label for="wave-Q">Q</label>
-
-                            <input type="radio" id="wave-R" name="wave-type" value="R">
-                            <label for="wave-R">R</label>
-
-                            <input type="radio" id="wave-S" name="wave-type" value="S">
-                            <label for="wave-S">S</label>
+                            <input type="radio" id="wave-QRS" name="wave-type" value="QRS">
+                            <label for="wave-QRS">QRS</label>
 
                             <input type="radio" id="wave-T" name="wave-type" value="T">
                             <label for="wave-T">T</label>
@@ -105,32 +99,32 @@
                     </div>
 
                     <div class="markup-table-container">
-    <table class="markup-table">
-        <thead>
-            <tr>
-                <th>Тип</th>
-                <th>Отведение</th>
-                <th>Время 1, с</th>    
-                <th>Амплитуда 1</th>
-                <th>Время 2, с</th>    
-                <th>Амплитуда 2</th>
-                <th>Комментарий</th>
-            </tr>
-        </thead>
-        <tbody id="markupTableBody">
-            <tr>
-                <td colspan="7" class="empty-markup">Нет данных разметки</td>  <!-- Было 5, стало 7 -->
-            </tr>
-        </tbody>
-    </table>
-    <div style="display: flex; justify-content: space-between; align-items: center; margin: 10px 10px 10px 0;">
-        <span id="saveMarkupStatus" style="font-size: 12px; color: #665;"></span>
-        <button id="saveMarkupBtn" class="btn btn-secondary" onclick="saveAllMarkupPoints()"
-                style="padding: 6px 12px; font-size: 13px; background-color: #a8e0a6; border: none; border-radius: 4px; color: black; cursor: pointer; ">
-            Сохранить все
-        </button>
-    </div>
-</div>
+                        <table class="markup-table">
+                            <thead>
+                                <tr>
+                                    <th>Тип</th>
+                                    <th>Отведение</th>
+                                    <th>Время 1, с</th>
+                                    <th>Амплитуда 1</th>
+                                    <th>Время 2, с</th>
+                                    <th>Амплитуда 2</th>
+                                    <th>Комментарий</th>
+                                </tr>
+                            </thead>
+                            <tbody id="markupTableBody">
+                                <tr>
+                                    <td colspan="7" class="empty-markup">Нет данных разметки</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin: 10px 10px 10px 0;">
+                            <span id="saveMarkupStatus" style="font-size: 12px; color: #665;"></span>
+                            <button id="saveMarkupBtn" class="btn btn-secondary" onclick="saveAllMarkupPoints()"
+                                    style="padding: 6px 12px; font-size: 13px; background-color: #a8e0a6; border: none; border-radius: 4px; color: black; cursor: pointer; ">
+                                Сохранить все
+                            </button>
+                        </div>
+                    </div>
                 </div>
             </div>
             <div class="waves-section">

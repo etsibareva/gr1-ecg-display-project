@@ -7,12 +7,101 @@ let firstPointElement = null;
 let secondPointData = null;
 let secondPointElement = null;
 
+let currentTooltip = null;           // текущий открытый тултип (DOM элемент)
+let currentTooltipMarkupIndex = null; // индекс разметки, к которой привязан тултип
+
 const API_BASE_URL = '/api';
 let currentDoctorId = null;
 let currentRecord = null;
 let fullEcgData = null;
 let fullSignalData = null;
 let selectedChannelIndex = null;
+
+function showModal({ message, type = 'alert', autoClose = null }) {
+    return new Promise((resolve) => {
+        const overlay = document.createElement('div');
+        overlay.className = 'modal-overlay';
+
+        const modal = document.createElement('div');
+        modal.className = 'modal-window';
+
+        const closeBtn = document.createElement('div');
+        closeBtn.className = 'modal-close';
+        closeBtn.innerHTML = '✕';
+        closeBtn.addEventListener('click', () => {
+            cleanup();
+            if (type === 'confirm') resolve(false);
+            else resolve();
+        });
+        modal.appendChild(closeBtn);
+
+        const msgDiv = document.createElement('div');
+        msgDiv.className = 'modal-message';
+        msgDiv.textContent = message;
+        modal.appendChild(msgDiv);
+
+        const buttonsDiv = document.createElement('div');
+        buttonsDiv.className = 'modal-buttons';
+
+        const cleanup = () => {
+            overlay.remove();
+        };
+
+        if (type === 'confirm') {
+            const okBtn = document.createElement('button');
+            okBtn.className = 'modal-btn modal-btn-ok';
+            okBtn.textContent = 'ОК';
+            okBtn.addEventListener('click', () => {
+                cleanup();
+                resolve(true);
+            });
+            buttonsDiv.appendChild(okBtn);
+
+            const cancelBtn = document.createElement('button');
+            cancelBtn.className = 'modal-btn modal-btn-cancel';
+            cancelBtn.textContent = 'Отмена';
+            cancelBtn.addEventListener('click', () => {
+                cleanup();
+                resolve(false);
+            });
+            buttonsDiv.appendChild(cancelBtn);
+        } else {
+            const okBtn = document.createElement('button');
+            okBtn.className = 'modal-btn modal-btn-ok';
+            okBtn.textContent = 'ОК';
+            okBtn.addEventListener('click', () => {
+                cleanup();
+                resolve();
+            });
+            buttonsDiv.appendChild(okBtn);
+        }
+
+        modal.appendChild(buttonsDiv);
+        overlay.appendChild(modal);
+        document.body.appendChild(overlay);
+
+        if (type === 'toast' && autoClose) {
+            setTimeout(() => {
+                if (document.body.contains(overlay)) {
+                    cleanup();
+                    resolve();
+                }
+            }, autoClose);
+        }
+    });
+}
+
+async function customAlert(message) {
+    await showModal({ message, type: 'alert' });
+}
+
+async function customConfirm(message) {
+    return await showModal({ message, type: 'confirm' });
+}
+
+async function customToast(message, duration = 2000) {
+    await showModal({ message, type: 'toast', autoClose: duration });
+}
 
 const formatFileSize = bytes => {
     if (!bytes) return '0 B';
@@ -31,35 +120,25 @@ const getSignalType = type => {
     return types[type] || `Тип ${type}`;
 };
 
-const showError = msg => alert('Ошибка: ' + msg);
+function formatDateTimeForTitle(dateString) {
+    const d = new Date(dateString);
+    const day = d.getDate().toString().padStart(2, '0');
+    const month = (d.getMonth() + 1).toString().padStart(2, '0');
+    const year = d.getFullYear();
+    const hours = d.getHours().toString().padStart(2, '0');
+    const minutes = d.getMinutes().toString().padStart(2, '0');
+    return `${day}${month}${year}_${hours}${minutes}`;
+}
 
-const showNotification = (message, type = 'info') => {
-    const notification = document.createElement('div');
-    notification.className = `notification ${type}`;
-    notification.textContent = message;
-    notification.style.cssText = `
-        position: fixed; top: 20px; right: 20px; padding: 15px 20px;
-        background-color: ${type === 'success' ? '#4CAF50' : type === 'error' ? '#f44336' : '#2196F3'};
-        color: white; border-radius: 4px; z-index: 1000;
-        animation: slideIn 0.3s ease; box-shadow: 0 2px 5px rgba(0,0,0,0.2);
-    `;
-
-    document.body.appendChild(notification);
-
-    const style = document.createElement('style');
-    style.textContent = `
-        @keyframes slideIn {
-            from { transform: translateX(100%); opacity: 0; }
-            to { transform: translateX(0); opacity: 1; }
-        }
-    `;
-    document.head.appendChild(style);
-
-    setTimeout(() => {
-        notification.style.animation = 'slideIn 0.3s ease reverse';
-        setTimeout(() => notification.remove(), 300);
-    }, 3000);
-};
+function formatReadableDateTime(dateString) {
+    const d = new Date(dateString);
+    const day = d.getDate().toString().padStart(2, '0');
+    const month = (d.getMonth() + 1).toString().padStart(2, '0');
+    const year = d.getFullYear();
+    const hours = d.getHours().toString().padStart(2, '0');
+    const minutes = d.getMinutes().toString().padStart(2, '0');
+    return `${day}.${month}.${year} ${hours}:${minutes}`;
+}
 
 function initializePointSelection() {
     ecgPointSelectionActive = true;
@@ -78,7 +157,7 @@ function initializePointSelection() {
     document.addEventListener('keydown', handleKeyPress);
 }
 
-function handlePointClick(e, d) {
+async function handlePointClick(e, d) {
     if (!firstPointSelected) {
         if (firstPointElement) {
             d3.select(firstPointElement).style('fill', 'transparent').attr('r', 4);
@@ -114,17 +193,20 @@ function handlePointClick(e, d) {
                     <button onclick="saveSinglePoint()" style="font-size:10px;padding:2px 5px;background-color:#4CAF50;color:white;border:none;border-radius:2px;">✓</button>
                     <button onclick="cancelPointSelection()" style="font-size:10px;padding:2px 5px;">✗</button>
                 </div>
-            </td>`;
+            </td>
+        `;
     } else {
         const isFirstBottom = firstPointElement.classList.contains('ecg-point-bottom');
         const isSecondBottom = this.classList.contains('ecg-point-bottom');
 
         if (isFirstBottom !== isSecondBottom) {
-            return alert('Обе точки должны быть на одном графике');
+            await customAlert('Обе точки должны быть на одном графике');
+            return;
         }
 
         if (!isFirstBottom && !isSecondBottom && this.closest('.ecg-graph') !== firstPointElement.closest('.ecg-graph')) {
-            return alert('Обе точки должны быть в одном отведении');
+            await customAlert('Обе точки должны быть в одном отведении');
+            return;
         }
 
         if (secondPointElement) {
@@ -224,10 +306,11 @@ function updateMarkupTable() {
 
     clearHighlightedPoints();
 
-    tb.innerHTML = !markupData.length ?
-        '<tr><td colspan="7" class="empty-markup">Нет данных о разметке</td></tr>' :
-        markupData.map((item, index) =>
-            `<tr class="markup-row" data-markup-index="${index}" style="cursor: pointer;">
+    if (!markupData.length) {
+        tb.innerHTML = '<tr><td colspan="8" class="empty-markup">Нет данных о разметке</td></tr>';
+    } else {
+        tb.innerHTML = markupData.map((item, index) => `
+            <tr class="markup-row" data-markup-index="${index}" style="cursor: pointer;">
                 <td>${item.type || ''}</td>
                 <td>${item.lead || ''}</td>
                 <td>${item.time1?.toFixed(3) || ''}</td>
@@ -235,29 +318,51 @@ function updateMarkupTable() {
                 <td>${item.time2?.toFixed(3) || ''}</td>
                 <td>${item.value2?.toFixed(4) || ''}</td>
                 <td>${item.comment || ''}</td>
-            </tr>`
-        ).join('');
+                <td style="text-align:center;"><button class="delete-markup-row-btn" data-index="${index}" style="background:none; border:none; cursor:pointer; font-size:14px; color:#e57373;">✕</button></td>
+            </tr>
+        `).join('');
 
-    document.querySelectorAll('.markup-row').forEach(row => {
-        row.addEventListener('click', function (e) {
-            const index = this.dataset.markupIndex;
-            highlightMarkupPoints(parseInt(index));
-
-            document.querySelectorAll('.markup-row').forEach(r =>
-                r.classList.remove('selected-markup-row'));
-            this.classList.add('selected-markup-row');
+        document.querySelectorAll('.markup-row').forEach(row => {
+            row.addEventListener('click', function (e) {
+                if (e.target.classList.contains('delete-markup-row-btn')) return;
+                const index = this.dataset.markupIndex;
+                highlightMarkupPoints(parseInt(index));
+                document.querySelectorAll('.markup-row').forEach(r => r.classList.remove('selected-markup-row'));
+                this.classList.add('selected-markup-row');
+            });
         });
-    });
+
+        document.querySelectorAll('.delete-markup-row-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                const index = parseInt(btn.dataset.index);
+                deleteMarkupRow(index);
+            });
+        });
+    }
 
     document.getElementById('markupModeToggle').checked = false;
 }
 
+function deleteMarkupRow(index) {
+    if (index >= 0 && index < markupData.length) {
+        markupData.splice(index, 1);
+        updateMarkupTable();
+        renderAllMarkupPoints();
+        closeTooltip();
+        customToast('Строка разметки удалена', 1500);
+    }
+}
+
 function clearHighlightedPoints() {
     d3.selectAll('.ecg-graph .ecg-point, .ecg-point-bottom')
-        .style('fill', 'transparent').attr('r', 4)
-        .style('stroke', null).style('stroke-width', null);
+        .style('fill', 'transparent')
+        .attr('r', 4)
+        .style('stroke', null)
+        .style('stroke-width', null);
 
-    d3.selectAll('.ecg-line').style('stroke', '#2c6fbb').style('stroke-width', 2);
+    d3.selectAll('.ecg-line-highlight').remove();
+    closeTooltip();
 }
 
 function highlightMarkupPoints(index) {
@@ -272,17 +377,13 @@ function highlightMarkupPoints(index) {
         const index1 = Math.round(markup.time1 * samplingRate);
         const index2 = markup.time2 > 0 ? Math.round(markup.time2 * samplingRate) : null;
 
-        d3.selectAll('.ecg-point-bottom')
-            .filter(d => Math.abs(d.index - index1) === 0)
-            .style('fill', '#ff0000').attr('r', 6)
-            .style('stroke', '#ffffff').style('stroke-width', '2px');
+        const points1 = d3.selectAll('.ecg-point-bottom').filter(d => Math.abs(d.index - index1) === 0);
+        points1.style('fill', '#ff0000').attr('r', 3).style('stroke', '#ffffff').style('stroke-width', '1px');
 
         if (index2 !== null) {
-            d3.selectAll('.ecg-point-bottom')
-                .filter(d => Math.abs(d.index - index2) === 0)
-                .style('fill', '#0066cc').attr('r', 6)
-                .style('stroke', '#ffffff').style('stroke-width', '2px');
-            highlightLineBetweenPoints(index1, index2, true);
+            const points2 = d3.selectAll('.ecg-point-bottom').filter(d => Math.abs(d.index - index2) === 0);
+            points2.style('fill', '#0066cc').attr('r', 3).style('stroke', '#ffffff').style('stroke-width', '1px');
+            highlightLineBetweenPoints(index1, index2, true, index);
         }
     } else {
         const channelIndex = fullEcgData.channelNames.findIndex(name => name === markup.lead);
@@ -305,7 +406,6 @@ function highlightMarkupPoints(index) {
         const findPointByX = (targetX) => {
             let closestPoint = null;
             let minDiff = Infinity;
-
             points.forEach(point => {
                 const diff = Math.abs(point.x - targetX);
                 if (diff < minDiff && diff < 2) {
@@ -313,7 +413,6 @@ function highlightMarkupPoints(index) {
                     closestPoint = point;
                 }
             });
-
             return closestPoint;
         };
 
@@ -321,8 +420,8 @@ function highlightMarkupPoints(index) {
         if (point1) {
             d3.select(targetGraph).selectAll('.ecg-point')
                 .filter(d => d === point1)
-                .style('fill', '#ff0000').attr('r', 6)
-                .style('stroke', '#ffffff').style('stroke-width', '2px');
+                .style('fill', '#ff0000').attr('r', 3)
+                .style('stroke', '#ffffff').style('stroke-width', '1px');
         }
 
         if (x2 !== null) {
@@ -330,92 +429,319 @@ function highlightMarkupPoints(index) {
             if (point2) {
                 d3.select(targetGraph).selectAll('.ecg-point')
                     .filter(d => d === point2)
-                    .style('fill', '#0066cc').attr('r', 6)
-                    .style('stroke', '#ffffff').style('stroke-width', '2px');
+                    .style('fill', '#0066cc').attr('r', 3)
+                    .style('stroke', '#ffffff').style('stroke-width', '1px');
             }
 
             if (point1 && point2) {
-                highlightLineBetweenPoints(point1.x, point2.x, false, targetGraph);
+                highlightLineBetweenPoints(point1.x, point2.x, false, index, targetGraph);
             }
         }
     }
 }
 
-function highlightLineBetweenPoints(pos1, pos2, isBottom, targetGraph = null) {
-    d3.selectAll('.ecg-line-highlight').remove();
-
+function highlightLineBetweenPoints(pos1, pos2, isBottom, markupIndex, targetGraph = null) {
+    let lineElement = null;
     if (isBottom) {
         const bottomSvg = d3.select('#bottom-lead svg');
         const line = bottomSvg.select('.ecg-line');
         const lineData = line.datum();
-
         if (lineData && lineData.length > 0) {
             const startIdx = Math.min(pos1, pos2);
             const endIdx = Math.max(pos1, pos2);
-
-            const highlightedSection = lineData.filter(d =>
-                d.index >= startIdx && d.index <= endIdx
-            );
-
+            const highlightedSection = lineData.filter(d => d.index >= startIdx && d.index <= endIdx);
             if (highlightedSection.length > 0) {
-                bottomSvg.select('g')
+                lineElement = bottomSvg.select('g')
                     .append('path')
                     .datum(highlightedSection)
                     .attr('class', 'ecg-line-highlight')
-                    .attr('d', d3.line()
-                        .x(d => d.x)
-                        .y(d => d.y)
-                        .curve(d3.curveMonotoneX))
+                    .attr('data-markup-index', markupIndex)
+                    .attr('d', d3.line().x(d => d.x).y(d => d.y).curve(d3.curveMonotoneX))
                     .attr('fill', 'none')
                     .attr('stroke', '#ffaa00')
-                    .attr('stroke-width', 4)
-                    .attr('stroke-dasharray', '5,3');
+                    .attr('stroke-width', 1.5)
+                    .on('click', function (e) {
+                        e.stopPropagation();
+                        toggleTooltip(markupIndex, e);
+                    });
             }
         }
     } else if (targetGraph) {
         const line = d3.select(targetGraph).select('.ecg-line');
         const lineData = line.datum();
-
         if (lineData && lineData.length > 0) {
             const startX = Math.min(pos1, pos2);
             const endX = Math.max(pos1, pos2);
-
-            const highlightedSection = lineData.filter(d =>
-                d.x >= startX && d.x <= endX
-            );
-
+            const highlightedSection = lineData.filter(d => d.x >= startX && d.x <= endX);
             if (highlightedSection.length > 0) {
                 let lineGroup = d3.select(targetGraph).select('.ecg-line-group');
                 if (lineGroup.empty()) {
-                    lineGroup = d3.select(targetGraph).append('g')
-                        .attr('class', 'ecg-line-group');
+                    lineGroup = d3.select(targetGraph).append('g').attr('class', 'ecg-line-group');
                 }
-
-                lineGroup.append('path')
+                lineElement = lineGroup.append('path')
                     .datum(highlightedSection)
                     .attr('class', 'ecg-line-highlight')
-                    .attr('d', d3.line()
-                        .x(d => d.x)
-                        .y(d => d.y)
-                        .curve(d3.curveMonotoneX))
+                    .attr('data-markup-index', markupIndex)
+                    .attr('d', d3.line().x(d => d.x).y(d => d.y).curve(d3.curveMonotoneX))
                     .attr('fill', 'none')
                     .attr('stroke', '#ffaa00')
-                    .attr('stroke-width', 4)
-                    .attr('stroke-dasharray', '5,3');
+                    .attr('stroke-width', 1.5)
+                    .on('click', function (e) {
+                        e.stopPropagation();
+                        toggleTooltip(markupIndex, e);
+                    });
             }
         }
     }
+}
+
+function closeTooltip() {
+    if (currentTooltip) {
+        currentTooltip.remove();
+        currentTooltip = null;
+        currentTooltipMarkupIndex = null;
+    }
+}
+
+function toggleTooltip(index, event) {
+    if (currentTooltip && currentTooltipMarkupIndex === index) {
+        closeTooltip();
+        return;
+    }
+    closeTooltip();
+
+    const item = markupData[index];
+    if (!item) return;
+
+    const tooltip = document.createElement('div');
+    tooltip.className = 'inline-tooltip';
+    tooltip.style.cssText = `
+        position: fixed;
+        background: white;
+        border: 1px solid #ccc;
+        border-radius: 8px;
+        padding: 10px;
+        font-size: 12px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+        z-index: 10000;
+        min-width: 200px;
+        max-width: 300px;
+        pointer-events: auto;
+    `;
+
+    tooltip.innerHTML = `
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+            <strong>Детали разметки</strong>
+            <button class="tooltip-close" style="background:none; border:none; cursor:pointer; font-size:16px;">✕</button>
+        </div>
+        <p><strong>Зубец:</strong> ${item.type}</p>
+        <p><strong>Отведение:</strong> ${item.lead}</p>
+        <p><strong>Время 1:</strong> ${item.time1?.toFixed(3)} с</p>
+        <p><strong>Амплитуда 1:</strong> ${item.value1?.toFixed(4)}</p>
+        <p><strong>Время 2:</strong> ${item.time2?.toFixed(3) || '—'}</p>
+        <p><strong>Амплитуда 2:</strong> ${item.value2?.toFixed(4) || '—'}</p>
+        <p><strong>Комментарий:</strong> ${item.comment || '—'}</p>
+        <button class="delete-from-tooltip" style="margin-top:8px; width:100%; padding:4px; background:#e0e0e0; border:1px solid #ccc; border-radius:4px; cursor:pointer;">✕ Удалить</button>
+    `;
+
+    // Позиционируем рядом с курсором
+    tooltip.style.left = (event.clientX + 15) + 'px';
+    tooltip.style.top = (event.clientY - 30) + 'px';
+
+    document.body.appendChild(tooltip);
+
+    const closeBtn = tooltip.querySelector('.tooltip-close');
+    const deleteBtn = tooltip.querySelector('.delete-from-tooltip');
+
+    closeBtn.addEventListener('click', () => closeTooltip());
+    deleteBtn.addEventListener('click', () => {
+        deleteMarkupRow(index);
+        closeTooltip();
+    });
+
+    // Закрытие по клику вне тултипа
+    const clickOutside = (e) => {
+        if (!tooltip.contains(e.target)) {
+            closeTooltip();
+            document.removeEventListener('click', clickOutside);
+        }
+    };
+    setTimeout(() => document.addEventListener('click', clickOutside), 0);
+
+    currentTooltip = tooltip;
+    currentTooltipMarkupIndex = index;
+}
+
+function renderAllMarkupPoints() {
+    clearHighlightedPoints();
+    if (!markupData.length || !fullEcgData) return;
+
+    for (let i = 0; i < markupData.length; i++) {
+        const markup = markupData[i];
+        if (markup.lead === fullSignalData?.name) {
+            const samplingRate = fullSignalData.samplingRate;
+            const index1 = Math.round(markup.time1 * samplingRate);
+            const index2 = markup.time2 > 0 ? Math.round(markup.time2 * samplingRate) : null;
+
+            const points1 = d3.selectAll('.ecg-point-bottom').filter(d => Math.abs(d.index - index1) === 0);
+            points1.style('fill', '#ff0000').attr('r', 3).style('stroke', '#ffffff').style('stroke-width', '1px');
+
+            if (index2 !== null) {
+                const points2 = d3.selectAll('.ecg-point-bottom').filter(d => Math.abs(d.index - index2) === 0);
+                points2.style('fill', '#0066cc').attr('r', 3).style('stroke', '#ffffff').style('stroke-width', '1px');
+                highlightLineBetweenPoints(index1, index2, true, i);
+            }
+        } else {
+            const channelIndex = fullEcgData.channelNames.findIndex(name => name === markup.lead);
+            if (channelIndex === -1) continue;
+
+            const containerId = channelIndex < 6 ? 'standard-leads' : 'chest-leads';
+            const graphIndex = channelIndex < 6 ? channelIndex : channelIndex - 6;
+            const container = document.getElementById(containerId);
+            if (!container) continue;
+
+            const graphs = container.querySelectorAll('.ecg-graph');
+            if (graphIndex >= graphs.length) continue;
+
+            const targetGraph = graphs[graphIndex];
+            const x1 = markup.time1 * 125;
+            const x2 = markup.time2 > 0 ? markup.time2 * 125 : null;
+
+            const points = d3.select(targetGraph).selectAll('.ecg-point').data();
+
+            const findPointByX = (targetX) => {
+                let closestPoint = null;
+                let minDiff = Infinity;
+                points.forEach(point => {
+                    const diff = Math.abs(point.x - targetX);
+                    if (diff < minDiff && diff < 2) {
+                        minDiff = diff;
+                        closestPoint = point;
+                    }
+                });
+                return closestPoint;
+            };
+
+            const point1 = findPointByX(x1);
+            if (point1) {
+                d3.select(targetGraph).selectAll('.ecg-point')
+                    .filter(d => d === point1)
+                    .style('fill', '#ff0000').attr('r', 3)
+                    .style('stroke', '#ffffff').style('stroke-width', '1px');
+            }
+
+            if (x2 !== null) {
+                const point2 = findPointByX(x2);
+                if (point2) {
+                    d3.select(targetGraph).selectAll('.ecg-point')
+                        .filter(d => d === point2)
+                        .style('fill', '#0066cc').attr('r', 3)
+                        .style('stroke', '#ffffff').style('stroke-width', '1px');
+                }
+
+                if (point1 && point2) {
+                    highlightLineBetweenPoints(point1.x, point2.x, false, i, targetGraph);
+                }
+            }
+        }
+    }
+}
+
+function reloadMarkupDisplay() {
+    renderAllMarkupPoints();
 }
 
 const style = document.createElement('style');
 style.textContent = `
     .markup-row:hover { background-color: #f0f8ff; }
     .markup-row.selected-markup-row { background-color: #e6f3ff; border-left: 3px solid #2c6fbb; }
-    .ecg-line-highlight { pointer-events: none; animation: pulse 1.5s infinite; }
-    @keyframes pulse {
-        0% { stroke-opacity: 0.8; }
-        50% { stroke-opacity: 0.4; }
-        100% { stroke-opacity: 0.8; }
+    .ecg-line-highlight { pointer-events: all; cursor: pointer; }
+    .ecg-line-highlight:hover { stroke: #ff6600; stroke-width: 2.5; }
+
+    .modal-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0,0,0,0.5);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 10000;
+    }
+    .modal-window {
+        background: white;
+        border-radius: 16px;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        width: 320px;
+        max-width: 90%;
+        padding: 20px;
+        position: relative;
+        text-align: center;
+        font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+    }
+    .modal-close {
+        position: absolute;
+        top: 12px;
+        right: 16px;
+        font-size: 24px;
+        cursor: pointer;
+        color: #888;
+        transition: color 0.2s;
+    }
+    .modal-close:hover { color: #333; }
+    .modal-message {
+        margin: 20px 0 25px;
+        font-size: 16px;
+        line-height: 1.4;
+        color: #1e2a3a;
+    }
+    .modal-buttons {
+        display: flex;
+        gap: 12px;
+        justify-content: center;
+    }
+    .modal-btn {
+        padding: 8px 20px;
+        border: none;
+        border-radius: 40px;
+        font-size: 14px;
+        cursor: pointer;
+        transition: 0.2s;
+    }
+    .modal-btn-ok {
+        background: #2c6fbb;
+        color: white;
+    }
+    .modal-btn-ok:hover { background: #1e4f8a; }
+    .modal-btn-cancel {
+        background: #f1f3f4;
+        color: #444;
+    }
+    .modal-btn-cancel:hover { background: #e0e2e5; }
+    @keyframes modalFadeIn {
+        from { opacity: 0; transform: scale(0.95); }
+        to { opacity: 1; transform: scale(1); }
+    }
+    .modal-window {
+        animation: modalFadeIn 0.2s ease-out;
+    }
+
+    .delete-record-btn, .delete-markup-btn, .delete-markup-row-btn {
+        background-color: #e0e0e0;
+        color: #333;
+        border: 1px solid #ccc;
+        border-radius: 3px;
+        padding: 2px 6px;
+        cursor: pointer;
+        font-size: 14px;
+        transition: all 0.2s;
+    }
+    .delete-record-btn:hover, .delete-markup-btn:hover, .delete-markup-row-btn:hover {
+        background-color: #e4aaaa;
+        border-color: #cd6767;
+        color: #333;
     }
 `;
 document.head.appendChild(style);
@@ -427,12 +753,12 @@ const getAuthHeaders = () => {
 
 async function saveAllMarkupPoints() {
     if (!markupData || markupData.length === 0) {
-        alert('Нет точек для сохранения');
+        await customAlert('Нет точек для сохранения');
         return;
     }
 
     if (!currentRecord?.recordId) {
-        alert('Не выбрана запись ЭКГ');
+        await customAlert('Не выбрана запись ЭКГ');
         return;
     }
 
@@ -490,7 +816,7 @@ async function saveAllMarkupPoints() {
             }
         };
 
-        statusEl.textContent = 'Загружаем JSON в MinIO...';
+        statusEl.textContent = 'Загрузка...';
 
         const formData = new FormData();
         const blob = new Blob([JSON.stringify(markupJson)], { type: 'application/json' });
@@ -506,17 +832,14 @@ async function saveAllMarkupPoints() {
             throw new Error('Не удалось загрузить JSON');
         }
 
-        const uploadResult = await uploadResponse.json();
-
-        if (confirm(`Разметка #${markupId} сохранена (${markupData.length} точек). Очистить таблицу?`)) {
-            markupData = [];
-            updateMarkupTable();
-            statusEl.textContent = 'Готово. Таблица очищена';
-        }
+        markupData = [];
+        updateMarkupTable();
+        statusEl.textContent = '';
+        await customToast('Разметка успешно сохранена', 2000);
 
     } catch (error) {
         statusEl.textContent = 'Ошибка сохранения';
-        alert('Ошибка при сохранении разметки: ' + error.message);
+        await customAlert('Ошибка при сохранении разметки: ' + error.message);
     } finally {
         saveBtn.disabled = false;
         saveBtn.textContent = 'Сохранить все';
@@ -554,25 +877,23 @@ function displayMarkupsList(markups) {
         return;
     }
 
-    container.innerHTML = markups.map(m => `
+    container.innerHTML = markups.map(m => {
+        const titleDate = formatDateTimeForTitle(m.createdAt);
+        const readableDate = formatReadableDateTime(m.createdAt);
+        return `
         <div class="markup-card" id="markup-${m.idMarkup}">
-            <div class="markup-header" onclick="loadMarkupPoints(${m.idMarkup})" style="cursor: pointer;">
-                <span>Разметка #${m.idMarkup}</span>
-                <span class="markup-badge">${formatFileSize(m.markupFileSize || 0)}</span>
+            <div class="markup-header" onclick="loadMarkupPoints(${m.idMarkup})" style="cursor: pointer; padding: 8px; border-bottom: 1px solid #eee; display: flex; justify-content: space-between; align-items: center;">
+                <div>
+                    <div style="font-weight: 500;">Markup_${titleDate}</div>
+                    <div style="font-size: 10px; color: #888;">время загрузки: ${readableDate}</div>
+                </div>
+                <button class="delete-markup-btn" onclick="deleteMarkup(${m.idMarkup}, event)">✕</button>
             </div>
-            <div class="markup-meta" onclick="loadMarkupPoints(${m.idMarkup})" style="cursor: pointer;">
-                <span>📅 ${new Date(m.createdAt).toLocaleDateString('ru-RU')}</span>
-                <span>📄 ${m.markupOriginalFileName || 'без имени'}</span>
+            <div class="markup-meta" onclick="loadMarkupPoints(${m.idMarkup})" style="cursor: pointer; padding: 4px 8px 8px 8px; font-size: 12px; color: #666;">
+                ${formatFileSize(m.markupFileSize || 0)}
             </div>
-            <div class="markup-actions" style="display: flex; justify-content: space-between; align-items: center; margin-top: 8px;">
-                <span class="markup-date">${new Date(m.createdAt).toLocaleString('ru-RU')}</span>
-                <button class="delete-markup-btn" onclick="deleteMarkup(${m.idMarkup}, event)" 
-                        style="background-color: #f44336; color: white; border: none; border-radius: 3px; padding: 4px 8px; cursor: pointer; font-size: 11px;">
-                    Удалить
-                </button>
-            </div>
-        </div>
-    `).join('');
+        </div>`;
+    }).join('');
 }
 
 function selectMarkup(markupId) {
@@ -623,8 +944,10 @@ async function loadMarkupPoints(markupId) {
             }, 500);
         }
 
+        renderAllMarkupPoints();
+
     } catch (error) {
-        alert('Не удалось загрузить точки разметки');
+        await customAlert('Не удалось загрузить точки разметки');
     } finally {
         const card = document.getElementById(`markup-${markupId}`);
         if (card) {
@@ -637,9 +960,8 @@ async function loadMarkupPoints(markupId) {
 async function deleteRecord(recordId, event) {
     if (event) event.stopPropagation();
 
-    if (!confirm('Вы уверены, что хотите удалить эту запись? Все связанные разметки также будут удалены.')) {
-        return;
-    }
+    const userConfirmed = await customConfirm('Вы уверены, что хотите удалить эту запись? Все связанные разметки также будут удалены.');
+    if (!userConfirmed) return;
 
     const recordCard = document.getElementById(`record-${recordId}`);
     const originalContent = recordCard.innerHTML;
@@ -674,20 +996,21 @@ async function deleteRecord(recordId, event) {
             clearBottomGraph();
         }
 
-        showNotification('Запись успешно удалена', 'success');
+        await customToast('Запись успешно удалена');
 
     } catch (error) {
         recordCard.style.opacity = '';
         recordCard.style.pointerEvents = '';
         recordCard.innerHTML = originalContent;
-        showNotification('Ошибка при удалении записи: ' + error.message, 'error');
+        await customToast('Ошибка при удалении записи: ' + error.message);
     }
 }
 
 async function deleteMarkup(markupId, event) {
     if (event) event.stopPropagation();
 
-    if (!confirm('Вы уверены, что хотите удалить эту разметку?')) return;
+    const userConfirmed = await customConfirm('Вы уверены, что хотите удалить эту разметку?');
+    if (!userConfirmed) return;
 
     const markupCard = document.getElementById(`markup-${markupId}`);
     const originalContent = markupCard.innerHTML;
@@ -712,13 +1035,13 @@ async function deleteMarkup(markupId, event) {
             markupsList.innerHTML = '<div class="no-data">Нет разметок для этой записи</div>';
         }
 
-        showNotification('Разметка успешно удалена', 'success');
+        await customToast('Разметка успешно удалена');
 
     } catch (error) {
         markupCard.style.opacity = '';
         markupCard.style.pointerEvents = '';
         markupCard.innerHTML = originalContent;
-        showNotification('Ошибка при удалении разметки: ' + error.message, 'error');
+        await customToast('Ошибка при удалении разметки: ' + error.message);
     }
 }
 
@@ -734,10 +1057,12 @@ async function loadDoctorRecords() {
                 if (u?.idDoctor) {
                     currentDoctorId = u.idDoctor;
                 } else {
-                    return showError('Не удалось загрузить данные врача');
+                    await customAlert('Не удалось загрузить данные врача');
+                    return;
                 }
             } else {
-                return showError('Не удалось загрузить данные врача');
+                await customAlert('Не удалось загрузить данные врача');
+                return;
             }
         }
 
@@ -745,7 +1070,10 @@ async function loadDoctorRecords() {
             headers: getAuthHeaders()
         });
 
-        if (!r?.ok) return showError('Не удалось загрузить список записей');
+        if (!r?.ok) {
+            await customAlert('Не удалось загрузить список записей');
+            return;
+        }
 
         const records = await r.json();
         const list = document.getElementById('recordsList');
@@ -757,26 +1085,26 @@ async function loadDoctorRecords() {
             return;
         }
 
-        list.innerHTML = records.map(r => `
+        list.innerHTML = records.map(r => {
+            const titleDate = formatDateTimeForTitle(r.uploadedAt);
+            const readableDate = formatReadableDateTime(r.uploadedAt);
+            return `
             <div class="record-card" id="record-${r.recordId}">
-                <div class="record-header" onclick="loadRecord(${r.recordId})" style="cursor: pointer;">
-                    ЭКГ #${r.recordId}
-                    <button class="delete-record-btn" onclick="deleteRecord(${r.recordId}, event)" 
-                            style="background-color: #f44336; color: white; border: none; border-radius: 3px; padding: 2px 6px; cursor: pointer; font-size: 10px; margin-left: 10px;">
-                        Удалить
-                    </button>
+                <div class="record-header" onclick="loadRecord(${r.recordId})" style="cursor: pointer; display: flex; justify-content: space-between; align-items: center; padding: 8px;">
+                    <div>
+                        <div style="font-weight: 500;">Record_${titleDate}</div>
+                        <div style="font-size: 10px; color: #888;">время загрузки: ${readableDate}</div>
+                    </div>
+                    <button class="delete-record-btn" onclick="deleteRecord(${r.recordId}, event)">✕</button>
                 </div>
-                <div class="record-meta" onclick="loadRecord(${r.recordId})" style="cursor: pointer;">
-                    ${new Date(r.uploadedAt).toLocaleDateString('ru-RU')} ${new Date(r.uploadedAt).toLocaleTimeString('ru-RU')}
-                </div>
-                <div class="record-meta" onclick="loadRecord(${r.recordId})" style="cursor: pointer;">
+                <div class="record-meta" style="cursor: pointer; padding: 0 8px 8px 8px; font-size: 12px; color: #666;" onclick="loadRecord(${r.recordId})">
                     ${formatFileSize(r.fileSize)}
                 </div>
-            </div>
-        `).join('');
+            </div>`;
+        }).join('');
 
     } catch (error) {
-        showError('Ошибка при загрузке списка записей: ' + error.message);
+        await customAlert('Ошибка при загрузке списка записей: ' + error.message);
     }
 }
 
@@ -795,25 +1123,23 @@ async function loadRecord(recordId) {
         if (!r?.ok) return;
 
         currentRecord = await r.json();
+
         document.getElementById('paramsData').innerHTML = `
-            <div class="param-item">
-                <div class="param-content">
-                    <div class="param-label">ID записи</div>
-                    <div class="param-value">${currentRecord.recordId}</div>
-                </div>
-            </div>
-            <div class="param-item">
-                <div class="param-content">
-                    <div class="param-label">Частота дискретизации</div>
-                    <div class="param-value">${currentRecord.samplingRate} Гц</div>
-                </div>
-            </div>
-            <div class="param-item">
-                <div class="param-content">
-                    <div class="param-label">Тип сигнала</div>
-                    <div class="param-value">${getSignalType(currentRecord.type)}</div>
-                </div>
-            </div>`;
+            <table style="width:100%; border-collapse:collapse;">
+                <tr style="border-bottom:1px solid #eee;">
+                    <td style="padding:6px 0; color:#555;">ID записи:</td>
+                    <td style="padding:6px 0; text-align:right; font-weight:500;">${currentRecord.recordId}</td>
+                </tr>
+                <tr style="border-bottom:1px solid #eee;">
+                    <td style="padding:6px 0; color:#555;">Частота дискретизации:</td>
+                    <td style="padding:6px 0; text-align:right; font-weight:500;">${currentRecord.samplingRate} Гц</td>
+                </tr>
+                <tr>
+                    <td style="padding:6px 0; color:#555;">Тип сигнала:</td>
+                    <td style="padding:6px 0; text-align:right; font-weight:500;">${getSignalType(currentRecord.type)}</td>
+                </tr>
+            </table>
+        `;
 
         document.querySelectorAll('.record-card').forEach(c => c.classList.remove('active'));
         document.getElementById(`record-${recordId}`)?.classList.add('active');
@@ -822,7 +1148,7 @@ async function loadRecord(recordId) {
         await loadRecordMarkups(recordId);
 
     } catch (error) {
-        showError('Ошибка при загрузке записи: ' + error.message);
+        await customAlert('Ошибка при загрузке записи: ' + error.message);
     }
 }
 
@@ -832,10 +1158,16 @@ async function loadParsedEcgData(recordId) {
             headers: getAuthHeaders()
         });
 
-        if (!r?.ok) return showError('Failed to load ECG data');
+        if (!r?.ok) {
+            await customAlert('Failed to load ECG data');
+            return;
+        }
 
         const d = JSON.parse(await r.text());
-        if (!d.channels) return showError('Данные каналов не получены');
+        if (!d.channels) {
+            await customAlert('Данные каналов не получены');
+            return;
+        }
 
         fullEcgData = {
             channels: d.channels,
@@ -874,7 +1206,7 @@ async function loadParsedEcgData(recordId) {
         };
 
     } catch (error) {
-        showError('Ошибка загрузки ЭКГ: ' + error.message);
+        await customAlert('Ошибка загрузки ЭКГ: ' + error.message);
     }
 }
 
@@ -882,7 +1214,7 @@ async function handleFileUpload(files) {
     if (!files || files.length === 0) return;
 
     if (!currentDoctorId) {
-        alert('Сначала необходимо авторизоваться');
+        await customAlert('Сначала необходимо авторизоваться');
         return;
     }
 
@@ -939,7 +1271,7 @@ async function handleFileUpload(files) {
     uploadBtn.textContent = originalText;
     uploadBtn.disabled = false;
 
-    alert(`Загружено: ${successCount} файлов\nОшибок: ${errorCount}`);
+    await customAlert(`Загружено: ${successCount} файлов\nОшибок: ${errorCount}`);
 
     if (successCount > 0) {
         await loadDoctorRecords();
@@ -947,7 +1279,8 @@ async function handleFileUpload(files) {
 }
 
 async function handleLogout() {
-    if (confirm('Вы уверены, что хотите выйти?')) {
+    const userConfirmed = await customConfirm('Вы уверены, что хотите выйти?');
+    if (userConfirmed) {
         markupData = [];
         updateMarkupTable();
         currentRecord = null;
@@ -974,6 +1307,13 @@ document.addEventListener('DOMContentLoaded', async () => {
         ?.addEventListener('change', function () {
             this.checked ? initializePointSelection() : cancelPointSelection();
         });
+
+    const reloadBtn = document.getElementById('reloadMarkupsBtn');
+    if (reloadBtn) {
+        reloadBtn.addEventListener('click', () => {
+            reloadMarkupDisplay();
+        });
+    }
 });
 
 window.loadRecord = loadRecord;
@@ -988,3 +1328,4 @@ window.saveSinglePoint = saveSinglePoint;
 window.destroyZoomHandlers = destroyZoomHandlers;
 window.deleteRecord = deleteRecord;
 window.deleteMarkup = deleteMarkup;
+window.reloadMarkupDisplay = reloadMarkupDisplay;

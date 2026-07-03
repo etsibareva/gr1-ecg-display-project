@@ -79,3 +79,106 @@ body {
         grid-template-columns: 3fr 1.1fr; /* Немного уменьшаем правую колонку */
     }
 }
+
+
+/* Всплывающие окна */
+/* Модальное затемнение */
+.modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: #e0f7fa;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 10000;
+}
+
+/* Белое окно */
+.modal-window {
+    background: white;
+    border-radius: 16px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+    width: 320px;
+    max-width: 90%;
+    padding: 20px;
+    position: relative;
+    text-align: center;
+    font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+}
+
+/* Кнопка закрытия (крестик) */
+.modal-close {
+    position: absolute;
+    top: 12px;
+    right: 16px;
+    font-size: 24px;
+    cursor: pointer;
+    color: #888;
+    transition: color 0.2s;
+}
+
+    .modal-close:hover {
+        color: #333;
+    }
+
+/* Текст сообщения */
+.modal-message {
+    margin: 20px 0 25px;
+    font-size: 16px;
+    line-height: 1.4;
+    color: #1e2a3a;
+}
+
+/* Кнопки */
+.modal-buttons {
+    display: flex;
+    gap: 12px;
+    justify-content: center;
+}
+
+.modal-btn {
+    padding: 8px 20px;
+    border: none;
+    border-radius: 40px;
+    font-size: 14px;
+    cursor: pointer;
+    transition: 0.2s;
+}
+
+.modal-btn-ok {
+    background: #2c6fbb;
+    color: white;
+}
+
+    .modal-btn-ok:hover {
+        background: #1e4f8a;
+    }
+
+.modal-btn-cancel {
+    background: #f1f3f4;
+    color: #444;
+}
+
+    .modal-btn-cancel:hover {
+        background: #e0e2e5;
+    }
+
+/* Анимация появления */
+@keyframes modalFadeIn {
+    from {
+        opacity: 0;
+        transform: scale(0.95);
+    }
+
+    to {
+        opacity: 1;
+        transform: scale(1);
+    }
+}
+
+.modal-window {
+    animation: modalFadeIn 0.2s ease-out;
+}

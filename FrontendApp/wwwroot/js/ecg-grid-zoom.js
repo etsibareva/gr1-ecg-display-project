@@ -4,13 +4,11 @@ const LINE_WIDTH = 0.7;
 let containerZoomHandlers = [];
 let bottomZoomHandler = null;
 let currentZoomState = null;
-let resizeTimeout = null;
-let refreshTimeout = null;
 
 function refreshAllDisplays(resetZoomState = false) {
-    console.log('Refreshing all displays...', resetZoomState ? 'with zoom reset' : 'preserving zoom');
-
     if (!fullEcgData) return;
+
+    clearEcgCurves();
 
     if (!resetZoomState && containerZoomHandlers[0]) {
         currentZoomState = d3.zoomTransform(containerZoomHandlers[0].svgs[0].node());
@@ -35,9 +33,7 @@ function refreshAllDisplays(resetZoomState = false) {
                 try {
                     containerZoomHandlers[0].svgs[0]
                         .call(containerZoomHandlers[0].zoom.transform, currentZoomState);
-                } catch (e) {
-                    console.warn('Failed to restore zoom state', e);
-                }
+                } catch (e) { }
             }, 150);
         }
     }, 100);
@@ -45,9 +41,7 @@ function refreshAllDisplays(resetZoomState = false) {
 
 function destroyZoomHandlers() {
     containerZoomHandlers.forEach(handler => {
-        if (handler && handler.destroy) {
-            handler.destroy();
-        }
+        if (handler && handler.destroy) handler.destroy();
     });
     containerZoomHandlers = [];
 
@@ -79,6 +73,7 @@ function resetZoom() {
                 .duration(250)
                 .call(handler.zoom.transform, d3.zoomIdentity);
         }
+        if (handler && handler.reset) handler.reset();
     });
 
     if (bottomZoomHandler) {
@@ -94,166 +89,111 @@ class ContainerZoomHandler {
         this.containers = containerIds.map(id => document.getElementById(id)).filter(Boolean);
         this.svgs = [];
         this.zoom = null;
-        this.baseTransforms = new Map();
-        this.zoomHandler = null;
+        this.zoomTransform = d3.zoomIdentity;
+        this._clamping = false;
 
         if (!this.containers.length) return;
-
         this.init();
     }
 
     init() {
         this.containers.forEach(container => {
             const svg = d3.select(container).select('svg');
-            if (!svg.empty()) {
-                this.svgs.push(svg);
-            }
+            if (!svg.empty()) this.svgs.push(svg);
         });
-
         if (!this.svgs.length) return;
-
-        this.saveBaseTransforms();
+        this.updateSizes();
         this.initZoom();
         this.addControls();
     }
 
-    saveBaseTransforms() {
-        this.baseTransforms.clear();
-        this.containers.forEach(container => {
-            container.querySelectorAll('.ecg-graph').forEach(g => {
-                const transform = d3.select(g).attr('transform') || 'translate(0,0)';
-                this.baseTransforms.set(g, transform);
-            });
-        });
+    updateSizes() {
+        if (!this.svgs.length) return;
+        const rect = this.svgs[0].node().getBoundingClientRect();
+        this.svgWidth = rect.width;
+        this.svgHeight = rect.height;
+        this.contentWidth = this.svgWidth;
+        this.contentHeight = this.svgHeight;
     }
 
     initZoom() {
-        if (this.zoomHandler) {
-            this.svgs.forEach(svg => {
-                svg.on('.zoom', null);
-            });
+        if (this.zoom) {
+            this.svgs.forEach(svg => svg.on('.zoom', null));
         }
-
         this.zoom = d3.zoom()
             .scaleExtent([1, 10])
-            .translateExtent([[-500, -500], [2500, 2500]])
             .on('zoom', (e) => this.handleZoom(e));
-
         this.svgs.forEach(svg => {
             svg.call(this.zoom);
             svg.on("dblclick.zoom", null);
+            svg.attr('transform', null);
         });
     }
 
     handleZoom(e) {
         if (window.ecgPointSelectionActive) return;
 
-        const t = e.transform;
-
-        this.baseTransforms.forEach((baseTransform, g) => {
-            try {
-                const match = baseTransform.match(/translate\(([^,]+),\s*([^)]+)\)/);
-                if (match) {
-                    const baseX = parseFloat(match[1]) || 0;
-                    const baseY = parseFloat(match[2]) || 0;
-
-                    d3.select(g)
-                        .attr('transform', `translate(${t.x},${t.y}) scale(${t.k}) translate(${baseX},${baseY})`);
-                }
-            } catch (err) {
-                console.warn('Error applying zoom transform', err);
-            }
+        this.svgs.forEach(svg => {
+            svg.attr('transform', null);
         });
-    }
 
-    addControls() {
-        if (!this.containers[0]) return;
+        let tx = e.transform.x;
+        let ty = e.transform.y;
+        let k = e.transform.k;
 
-        const container = d3.select(this.containers[0]);
-
-        container.selectAll('.container-zoom-controls').remove();
-
-        const btns = container
-            .append('div')
-            .attr('class', 'container-zoom-controls')
-            .style('position', 'absolute')
-            .style('top', '5px')
-            .style('right', '5px')
-            .style('display', 'flex')
-            .style('gap', '5px')
-            .style('z-index', '20')
-            .style('background', 'white')
-            .style('padding', '3px')
-            .style('border-radius', '4px')
-            .style('border', '1px solid #ddd');
-
-        btns
-            .append('button')
-            .text('+')
-            .style('padding', '2px 8px')
-            .style('font-size', '14px')
-            .style('cursor', 'pointer')
-            .style('border', '1px solid #ccc')
-            .style('background', '#f5f5f5')
-            .style('border-radius', '3px')
-            .on('click', () => {
-                if (this.svgs[0]) {
-                    this.svgs[0]
-                        .transition()
-                        .duration(250)
-                        .call(this.zoom.scaleBy, 1.5);
-                }
-            });
-
-        btns
-            .append('button')
-            .text('−')
-            .style('padding', '2px 8px')
-            .style('font-size', '14px')
-            .style('cursor', 'pointer')
-            .style('border', '1px solid #ccc')
-            .style('background', '#f5f5f5')
-            .style('border-radius', '3px')
-            .on('click', () => {
-                if (this.svgs[0]) {
-                    this.svgs[0]
-                        .transition()
-                        .duration(250)
-                        .call(this.zoom.scaleBy, 0.75);
-                }
-            });
-
-        btns
-            .append('button')
-            .text('⟲')
-            .style('padding', '2px 8px')
-            .style('font-size', '14px')
-            .style('cursor', 'pointer')
-            .style('border', '1px solid #ccc')
-            .style('background', '#f5f5f5')
-            .style('border-radius', '3px')
-            .on('click', () => {
-                if (this.svgs[0]) {
-                    this.svgs[0]
-                        .transition()
-                        .duration(250)
-                        .call(this.zoom.transform, d3.zoomIdentity);
-                    currentZoomState = null;
-                }
-            });
-    }
-
-    destroy() {
-        if (this.svgs) {
-            this.svgs.forEach(svg => {
-                svg.on('.zoom', null);
-            });
+        const minTx = this.svgWidth - this.contentWidth * k;
+        const maxTx = 0;
+        if (this.contentWidth * k <= this.svgWidth) {
+            tx = 0;
+        } else {
+            tx = Math.max(minTx, Math.min(maxTx, tx));
         }
+
+        const minTy = this.svgHeight - this.contentHeight * k;
+        const maxTy = 0;
+        if (this.contentHeight * k <= this.svgHeight) {
+            ty = 0;
+        } else {
+            ty = Math.max(minTy, Math.min(maxTy, ty));
+        }
+
+        if (tx !== e.transform.x || ty !== e.transform.y || k !== e.transform.k) {
+            if (!this._clamping) {
+                this._clamping = true;
+                const newTransform = d3.zoomIdentity.translate(tx, ty).scale(k);
+                this.svgs[0].call(this.zoom.transform, newTransform);
+                this._clamping = false;
+            }
+            return;
+        }
+
+        this.zoomTransform = e.transform;
+
         this.containers.forEach(container => {
-            d3.select(container).selectAll('.container-zoom-controls').remove();
+            const graphs = container.querySelectorAll('.ecg-graph');
+            graphs.forEach(g => {
+                const baseX = parseFloat(g.getAttribute('data-initial-x') || '0');
+                const baseY = parseFloat(g.getAttribute('data-initial-y') || '0');
+                const newX = this.zoomTransform.x + baseX * this.zoomTransform.k;
+                const newY = this.zoomTransform.y + baseY * this.zoomTransform.k;
+                d3.select(g).attr('transform', `translate(${newX},${newY}) scale(${this.zoomTransform.k})`);
+            });
         });
-        this.baseTransforms.clear();
     }
+
+    reset() {
+        this.containers.forEach(container => {
+            const graphs = container.querySelectorAll('.ecg-graph');
+            graphs.forEach(g => {
+                const baseX = parseFloat(g.getAttribute('data-initial-x') || '0');
+                const baseY = parseFloat(g.getAttribute('data-initial-y') || '0');
+                d3.select(g).attr('transform', `translate(${baseX},${baseY}) scale(1)`);
+            });
+        });
+    }
+
+    addControls() { }
+    destroy() { }
 }
 
 class BottomZoomHandler {
@@ -262,134 +202,108 @@ class BottomZoomHandler {
         this.container = document.getElementById(containerId);
         this.svg = null;
         this.zoom = null;
-        this.baseTransform = null;
+        this._clamping = false;
 
         if (!this.container) return;
-
         this.init();
     }
 
     init() {
         this.svg = d3.select(this.container).select('svg');
         if (this.svg.empty()) return;
-
-        this.baseTransform = d3.select(this.container).select('g').attr('transform') || 'translate(0,0)';
-
+        this.updateSizes();
         this.initZoom();
         this.addControls();
     }
 
-    initZoom() {
-        if (this.svg) {
-            this.svg.on('.zoom', null);
-        }
+    updateSizes() {
+        const rect = this.svg.node().getBoundingClientRect();
+        this.svgWidth = rect.width;
+        this.svgHeight = rect.height;
+        this.contentWidth = this.svgWidth;
+        this.contentHeight = this.svgHeight;
+    }
 
+    initZoom() {
+        if (this.svg) this.svg.on('.zoom', null);
         this.zoom = d3.zoom()
             .scaleExtent([1, 10])
-            .translateExtent([[-500, -500], [2500, 2500]])
             .on('zoom', (e) => this.handleZoom(e));
-
         this.svg.call(this.zoom);
         this.svg.on("dblclick.zoom", null);
+        this.svg.attr('transform', null);
     }
 
     handleZoom(e) {
         if (window.ecgPointSelectionActive) return;
 
-        const t = e.transform;
-        const g = d3.select(this.container).select('g.ecg-graph');
+        this.svg.attr('transform', null);
 
-        if (!g.empty()) {
-            g.attr('transform', `translate(${t.x},${t.y}) scale(${t.k})`);
+        let tx = e.transform.x;
+        let ty = e.transform.y;
+        let k = e.transform.k;
+
+        const minTx = this.svgWidth - this.contentWidth * k;
+        const maxTx = 0;
+        if (this.contentWidth * k <= this.svgWidth) {
+            tx = 0;
+        } else {
+            tx = Math.max(minTx, Math.min(maxTx, tx));
         }
-    }
 
-    addControls() {
-        const container = d3.select(this.container);
+        const minTy = this.svgHeight - this.contentHeight * k;
+        const maxTy = 0;
+        if (this.contentHeight * k <= this.svgHeight) {
+            ty = 0;
+        } else {
+            ty = Math.max(minTy, Math.min(maxTy, ty));
+        }
 
-        container.selectAll('.bottom-zoom-controls').remove();
+        if (tx !== e.transform.x || ty !== e.transform.y || k !== e.transform.k) {
+            if (!this._clamping) {
+                this._clamping = true;
+                const newTransform = d3.zoomIdentity.translate(tx, ty).scale(k);
+                this.svg.call(this.zoom.transform, newTransform);
+                this._clamping = false;
+            }
+            return;
+        }
 
-        const btns = container
-            .append('div')
-            .attr('class', 'bottom-zoom-controls')
-            .style('position', 'absolute')
-            .style('top', '5px')
-            .style('right', '5px')
-            .style('display', 'flex')
-            .style('gap', '5px')
-            .style('z-index', '20')
-            .style('background', 'white')
-            .style('padding', '3px')
-            .style('border-radius', '4px')
-            .style('border', '1px solid #ddd');
-
-        btns
-            .append('button')
-            .text('+')
-            .style('padding', '2px 8px')
-            .style('font-size', '14px')
-            .style('cursor', 'pointer')
-            .style('border', '1px solid #ccc')
-            .style('background', '#f5f5f5')
-            .style('border-radius', '3px')
-            .on('click', () => {
-                if (this.svg) {
-                    this.svg
-                        .transition()
-                        .duration(250)
-                        .call(this.zoom.scaleBy, 1.5);
-                }
-            });
-
-        btns
-            .append('button')
-            .text('−')
-            .style('padding', '2px 8px')
-            .style('font-size', '14px')
-            .style('cursor', 'pointer')
-            .style('border', '1px solid #ccc')
-            .style('background', '#f5f5f5')
-            .style('border-radius', '3px')
-            .on('click', () => {
-                if (this.svg) {
-                    this.svg
-                        .transition()
-                        .duration(250)
-                        .call(this.zoom.scaleBy, 0.75);
-                }
-            });
-
-        btns
-            .append('button')
-            .text('⟲')
-            .style('padding', '2px 8px')
-            .style('font-size', '14px')
-            .style('cursor', 'pointer')
-            .style('border', '1px solid #ccc')
-            .style('background', '#f5f5f5')
-            .style('border-radius', '3px')
-            .on('click', () => this.reset());
+        const g = d3.select(this.container).select('g.ecg-graph');
+        if (!g.empty()) {
+            const baseX = parseFloat(g.attr('data-initial-x') || '0');
+            const baseY = parseFloat(g.attr('data-initial-y') || '0');
+            const newX = tx + baseX * k;
+            const newY = ty + baseY * k;
+            g.attr('transform', `translate(${newX},${newY}) scale(${k})`);
+        }
     }
 
     reset() {
+        const g = d3.select(this.container).select('g.ecg-graph');
+        if (!g.empty()) {
+            const baseX = parseFloat(g.attr('data-initial-x') || '0');
+            const baseY = parseFloat(g.attr('data-initial-y') || '0');
+            g.attr('transform', `translate(${baseX},${baseY}) scale(1)`);
+        }
         if (this.svg) {
-            this.svg
-                .transition()
-                .duration(250)
-                .call(this.zoom.transform, d3.zoomIdentity);
+            this.svg.call(this.zoom.transform, d3.zoomIdentity);
         }
     }
 
-    destroy() {
-        if (this.svg) {
-            this.svg.on('.zoom', null);
-        }
-        d3.select(this.container).selectAll('.bottom-zoom-controls').remove();
-    }
+    addControls() { }
+    destroy() { }
+}
+
+function clearEcgCurves() {
+    const selector = '#standard-leads svg .ecg-line, #chest-leads svg .ecg-line, #standard-leads svg .ecg-point, #chest-leads svg .ecg-point';
+    document.querySelectorAll(selector).forEach(el => el.remove());
 }
 
 function displayAllChannelsD3() {
-    d3.select("body").selectAll(".ecg-tooltip").remove();
+    if (!fullEcgData) return;
+
+    clearEcgCurves();
 
     const tooltip = d3.select("body")
         .append("div")
@@ -404,11 +318,15 @@ function displayAllChannelsD3() {
         .style("z-index", "1000")
         .style("box-shadow", "0 2px 4px rgba(0,0,0,0.1)");
 
-    document.querySelectorAll('#standard-leads, #chest-leads').forEach((container, ci) => {
+    const containers = document.querySelectorAll('#standard-leads, #chest-leads');
+
+    containers.forEach((container, ci) => {
         const svg = container.querySelector('svg');
         if (!svg) return;
 
-        svg.querySelectorAll('.ecg-graph').forEach((g, gi) => {
+        const graphs = svg.querySelectorAll('.ecg-graph');
+
+        graphs.forEach((g, gi) => {
             const idx = ci * 6 + gi;
             if (idx >= fullEcgData.channels.length) return;
 
@@ -489,7 +407,10 @@ function displayBottomGraph() {
         .attr('viewBox', `0 0 ${width} ${height}`)
         .style('background', '#ffffff');
 
-    const g = svg.append('g').attr('class', 'ecg-graph graph-single');
+    const g = svg.append('g')
+        .attr('class', 'ecg-graph graph-single')
+        .attr('data-initial-x', 0)
+        .attr('data-initial-y', 0);
 
     createFullSizeGrid(g, width, height);
 
@@ -555,7 +476,7 @@ function displayBottomGraph() {
             if (!window.ecgPointSelectionActive) {
                 tooltip
                     .style('opacity', 1)
-                    .html(`<strong>${d.channel}</strong><br>Амплитуда: ${d.value.toFixed(4)} мВ<br>Индекс: ${d.index}`)
+                    .html(`<strong>${d.channel}</strong><br>Амплитуда: ${d.value.toFixed(4)} мВ`)
                     .style('left', (e.pageX + 10) + 'px')
                     .style('top', (e.pageY - 15) + 'px');
             }
@@ -677,8 +598,6 @@ function clearBottomGraph() {
 }
 
 function createEcgGrids() {
-    console.log('Creating ECG grids...');
-
     const standardLeads = document.getElementById('standard-leads');
     const chestLeads = document.getElementById('chest-leads');
     const bottomLead = document.getElementById('bottom-lead');
@@ -719,9 +638,12 @@ function createBottomGrid() {
         .attr('viewBox', `0 0 ${width} ${height}`)
         .style('background', '#ffffff');
 
-    createFullSizeGrid(svg
-        .append('g')
-        .attr('class', 'ecg-graph graph-single'), width, height);
+    const g = svg.append('g')
+        .attr('class', 'ecg-graph graph-single')
+        .attr('data-initial-x', 0)
+        .attr('data-initial-y', 0);
+
+    createFullSizeGrid(g, width, height);
 }
 
 function createFullSizeGrid(g, width, height, step = 25) {
@@ -808,6 +730,8 @@ function createGridForContainer(containerId, channelNames) {
         const g = svg
             .append('g')
             .attr('class', `ecg-graph graph-${index}`)
+            .attr('data-initial-x', 0)
+            .attr('data-initial-y', index * graphHeight)
             .attr('transform', `translate(0,${index * graphHeight})`);
 
         createFullSizeGrid(g, width, graphHeight);
@@ -837,24 +761,4 @@ window.addEventListener('load', () => {
             initZoomHandlers();
         }
     }, 100);
-});
-
-window.addEventListener('resize', () => {
-    clearTimeout(resizeTimeout);
-    resizeTimeout = setTimeout(() => {
-        if (fullEcgData) {
-            refreshAllDisplays(true);
-        } else {
-            createEcgGrids();
-        }
-    }, 250);
-});
-
-document.addEventListener('visibilitychange', () => {
-    if (!document.hidden && fullEcgData) {
-        clearTimeout(refreshTimeout);
-        refreshTimeout = setTimeout(() => {
-            refreshAllDisplays(false);
-        }, 100);
-    }
 });
