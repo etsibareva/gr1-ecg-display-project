@@ -116,7 +116,7 @@ builder.Services.AddCors(options =>
                   .AllowAnyHeader();
 
             // ИЛИ для продакшена - конкретные источники:
-            // policy.WithOrigins(
+            //policy.WithOrigins(
             //     "http://127.0.0.1:5004",
             //     "http://localhost:5004",
             //     "http://frontend:80"  // если фронтенд в Docker сети
