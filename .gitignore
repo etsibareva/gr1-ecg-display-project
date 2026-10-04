@@ -48,3 +48,6 @@ Migrations/*.resx
 # DataAccess/Migrations/
 
 BlazorApp/
+
+logs/
+*.log

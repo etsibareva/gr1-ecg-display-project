@@ -133,13 +133,27 @@ h1 {
     position: absolute;
     top: 30px;
     right: 30px;
-    background: #e4aaaa;
-    color: #333;
-    border: 1px solid #cd6767;
+    background: transparent;
+    color: #555;
+    border: 1px solid #d0d5dd;
+    transition: background 0.15s, color 0.15s, border-color 0.15s;
 }
 
     .logout-btn:hover {
-        background: #cd6767;
+        background: #fef2f2;
+        color: #b91c1c;
+        border-color: #fca5a5;
+    }
+
+    .logout-btn:active {
+        background: #fee2e2;
+        color: #991b1b;
+        border-color: #f87171;
+    }
+
+    .logout-btn:focus-visible {
+        outline: 2px solid #fca5a5;
+        outline-offset: 2px;
     }
 
 /* ==================== ССЫЛКИ ==================== */

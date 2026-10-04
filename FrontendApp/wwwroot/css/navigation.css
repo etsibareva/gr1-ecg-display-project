@@ -10,9 +10,15 @@
     box-shadow: 0 1px 3px rgba(0,0,0,0.1);
 }
 
-.nav-left, .nav-center, .nav-right {
+.nav-center {
     display: flex;
     align-items: center;
+}
+
+.nav-right {
+    display: flex;
+    align-items: center;
+    gap: 8px;
 }
 
 .nav-btn {
@@ -29,16 +35,27 @@
     }
 
 .logout-btn {
-    position: absolute;
-    top: 30px;
-    right: 30px;
-    background: #e4aaaa;
-    color: #333;
-    border: 1px solid #cd6767;
+    background: transparent;
+    color: #555;
+    border: 1px solid #d0d5dd;
+    transition: background 0.15s, color 0.15s, border-color 0.15s;
 }
 
     .logout-btn:hover {
-        background: #cd6767;
+        background: #fef2f2;
+        color: #b91c1c;
+        border-color: #fca5a5;
+    }
+
+    .logout-btn:active {
+        background: #fee2e2;
+        color: #991b1b;
+        border-color: #f87171;
+    }
+
+    .logout-btn:focus-visible {
+        outline: 2px solid #fca5a5;
+        outline-offset: 2px;
     }
 
 .refresh-btn {
@@ -51,9 +68,9 @@
     border-radius: 4px;
 }
 
-.refresh-btn:hover {
-    background: #f5f5f5;
-}
+    .refresh-btn:hover {
+        background: #f5f5f5;
+    }
 
 .load-markup-btn {
     background: #2196F3;
@@ -65,9 +82,9 @@
     font-size: 11px;
 }
 
-.load-markup-btn:hover {
-    background: #1976D2;
-}
+    .load-markup-btn:hover {
+        background: #1976D2;
+    }
 
 .btn-primary {
     background: #4CAF50;
@@ -79,11 +96,11 @@
     font-size: 14px;
 }
 
-.btn-primary:hover {
-    background: #45a049;
-}
+    .btn-primary:hover {
+        background: #45a049;
+    }
 
-.btn-primary:disabled {
-    background: #cccccc;
-    cursor: not-allowed;
-}
+    .btn-primary:disabled {
+        background: #cccccc;
+        cursor: not-allowed;
+    }

@@ -13,37 +13,25 @@
 <body>
     <div class="ecg-container">
         <div class="ecg-nav">
-            <div class="nav-left">
-                <button class="nav-btn profile-btn" onclick="window.location.href='profile.html'" style="margin-left: 10px;">
-                    Личный кабинет
-                </button>
-                <button class="nav-btn upload-btn" onclick="document.getElementById('fileUpload').click()" style="margin-left: 10px;">
-                    Загрузить ЭКГ
-                </button>
-                <input type="file" id="fileUpload" multiple accept=".npy" style="display: none;" onchange="handleFileUpload(this.files)">
-            </div>
             <div class="nav-center">
                 <h3>Просмотр ЭКГ</h3>
             </div>
             <div class="nav-right">
+                <button class="nav-btn profile-btn" onclick="window.location.href='profile.html'">
+                    Личный кабинет
+                </button>
+                <button class="nav-btn upload-btn" onclick="document.getElementById('fileUpload').click()">
+                    Загрузить ЭКГ
+                </button>
                 <button class="nav-btn logout-btn" onclick="handleLogout()">
                     Выйти
                 </button>
+                <input type="file" id="fileUpload" multiple accept=".npy" style="display: none;" onchange="handleFileUpload(this.files)">
             </div>
         </div>
 
         <div class="left-column">
-            <div class="graphs-row">
-                <div class="graph-container graph-left" id="standard-leads">
-                    <div class="graph-title">Стандартные отведения</div>
-                </div>
-
-                <div class="graph-container graph-right" id="chest-leads">
-                    <div class="graph-title">Грудные отведения</div>
-                </div>
-            </div>
-
-            <div class="full-signal-controls" style="margin-bottom: 10px; padding: 5px; background: #f5f5f5; border-radius: 4px;">
+            <div class="full-signal-controls" style="padding: 5px; background: #f5f5f5; border-radius: 4px;">
                 <label style="font-size: 12px; margin-right: 10px;">Канал для детального просмотра:</label>
                 <select id="fullSignalChannelSelect" style="padding: 4px 8px; border: 1px solid #ddd; border-radius: 3px; font-size: 12px;">
                     <option value="">-- Выберите канал --</option>
@@ -52,6 +40,16 @@
 
             <div class="graph-container graph-bottom" id="bottom-lead">
                 <div class="graph-title">Дополнительные данные</div>
+            </div>
+
+            <div class="graphs-row">
+                <div class="graph-container graph-left" id="standard-leads">
+                    <div class="graph-title">Стандартные отведения</div>
+                </div>
+
+                <div class="graph-container graph-right" id="chest-leads">
+                    <div class="graph-title">Грудные отведения</div>
+                </div>
             </div>
         </div>
 
@@ -147,6 +145,5 @@
     <script src="js/auth.js"></script>
     <script src="js/ecg-grid-zoom.js"></script>
     <script src="js/ecg-records.js"></script>
-    <script src="js/ecg-viewer.js"></script>
 </body>
 </html>

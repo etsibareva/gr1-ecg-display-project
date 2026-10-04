@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
+using WebApi.Logging;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -126,6 +127,10 @@ builder.Services.AddCors(options =>
             //   .AllowCredentials();  // если нужны куки/токены
         });
 });
+
+// Логирование
+builder.Services.AddSingleton<IAuthLogger, AuthLogger>();
+builder.Services.AddSingleton<IFilesLogger, FilesLogger>();
 
 var app = builder.Build();
 

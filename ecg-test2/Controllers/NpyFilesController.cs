@@ -3,6 +3,7 @@ using DataAccess.Model;
 using DataAccess.Services;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using WebApi.Logging;
 
 namespace WebApi.Controllers
 {
@@ -28,26 +29,37 @@ namespace WebApi.Controllers
         private readonly AppDbContext context;
         private readonly NpyFileService npyFileService;
         private readonly ILogger<NpyFilesController> logger;
+        private readonly IFilesLogger _log;
 
-        public NpyFilesController(AppDbContext _context, NpyFileService _npyFileService, ILogger<NpyFilesController> _logger)
+        public NpyFilesController(AppDbContext _context, NpyFileService _npyFileService, ILogger<NpyFilesController> _logger, IFilesLogger log)
         {
             context = _context;
             npyFileService = _npyFileService;
             logger = _logger;
+            _log = log;
         }
 
         [HttpPost("upload/{recordId}")]
         public async Task<IActionResult> UploadNpyFile(int recordId, IFormFile file)
         {
             if (file == null || file.Length == 0)
+            {
+                _log.Warn($"NPY upload fail | recordId={recordId} | reason=empty_file");
                 return BadRequest("NPY file is required");
+            }
 
             if (Path.GetExtension(file.FileName).ToLower() != ".npy")
+            {
+                _log.Warn($"NPY upload fail | recordId={recordId} | reason=bad_extension | name={file.FileName}");
                 return BadRequest("Only .npy files are supported");
+            }
 
             var record = await context.records.FindAsync(recordId);
             if (record == null)
+            {
+                _log.Warn($"NPY upload fail | recordId={recordId} | reason=record_not_found");
                 return NotFound($"Record with ID {recordId} not found");
+            }
 
             try
             {
@@ -66,6 +78,8 @@ namespace WebApi.Controllers
 
                 logger.LogInformation("NPY file uploaded for record {RecordId}", recordId);
 
+                _log.Info($"NPY upload ok | recordId={recordId} | size={file.Length} | name={file.FileName}");
+
                 return Ok(new
                 {
                     ObjectName = objectName,
@@ -77,6 +91,7 @@ namespace WebApi.Controllers
             catch (Exception ex)
             {
                 logger.LogError(ex, "Error uploading NPY file for record {RecordId}", recordId);
+                _log.Error(ex, $"NPY upload fail | recordId={recordId}");
                 return StatusCode(500, "Error uploading NPY file");
             }
         }
@@ -88,14 +103,21 @@ namespace WebApi.Controllers
             {
                 // Добавляем проверку обязательных полей
                 if (request == null)
+                {
+                    _log.Warn("NPY create-record fail | reason=empty_request");
                     return BadRequest("Request body is required");
+                }
 
                 if (request.IdDoctor <= 0)
+                {
+                    _log.Warn($"NPY create-record fail | reason=invalid_doctor_id | id={request.IdDoctor}");
                     return BadRequest("Valid doctor ID is required");
+                }
 
                 var doctor = await context.doctors.FindAsync(request.IdDoctor);
                 if (doctor == null)
                 {
+                    _log.Warn($"NPY create-record fail | reason=doctor_not_found | id={request.IdDoctor}");
                     return BadRequest($"Doctor with ID {request.IdDoctor} not found");
                 }
 
@@ -116,6 +138,8 @@ namespace WebApi.Controllers
 
                 logger.LogInformation("Record created with ID: {RecordId}", record.IdRecord);
 
+                _log.Info($"NPY create-record ok | recordId={record.IdRecord} | doctorId={request.IdDoctor}");
+
                 return Ok(new
                 {
                     RecordId = record.IdRecord,
@@ -125,21 +149,27 @@ namespace WebApi.Controllers
             catch (Exception ex)
             {
                 logger.LogError(ex, "Error creating record");
+                _log.Error(ex, "NPY create-record fail");
                 return StatusCode(500, "Error creating record");
             }
         }
-        
+
 
         [HttpGet("download/{recordId}")]
         public async Task<IActionResult> DownloadNpySignal(int recordId)
         {
             var record = await context.records.FindAsync(recordId);
             if (record == null || string.IsNullOrEmpty(record.SignalObjectName))
+            {
+                _log.Warn($"NPY download fail | recordId={recordId} | reason=signal_not_found");
                 return NotFound("Signal not found");
+            }
 
             try
             {
                 var npyData = await npyFileService.LoadNpyDataAsync(record.SignalObjectName);
+
+                _log.Info($"NPY download ok | recordId={recordId} | size={npyData.Length}");
 
                 return File(npyData, "application/octet-stream",
                     $"{record.SignalOriginalFileName ?? $"signal_{recordId}.npy"}");
@@ -147,6 +177,7 @@ namespace WebApi.Controllers
             catch (Exception ex)
             {
                 logger.LogError(ex, "Error downloading NPY signal for record {RecordId}", recordId);
+                _log.Error(ex, $"NPY download fail | recordId={recordId}");
                 return StatusCode(500, "Error downloading signal file");
             }
         }
@@ -155,11 +186,14 @@ namespace WebApi.Controllers
         public async Task<IActionResult> GetNpyFileInfo(int recordId)
         {
             var record = await context.records
-                .Include(r => r.Markups) 
+                .Include(r => r.Markups)
                 .FirstOrDefaultAsync(r => r.IdRecord == recordId);
 
             if (record == null)
+            {
+                _log.Warn($"NPY info fail | recordId={recordId} | reason=record_not_found");
                 return NotFound("Record not found");
+            }
 
             var hasFile = !string.IsNullOrEmpty(record.SignalObjectName);
 
@@ -170,6 +204,8 @@ namespace WebApi.Controllers
                 3 => 200,  // ЭЭГ
                 _ => 500   // по умолчанию
             };
+
+            _log.Info($"NPY info ok | recordId={recordId} | hasFile={hasFile}");
 
             return Ok(new
             {
@@ -200,7 +236,10 @@ namespace WebApi.Controllers
                 .FirstOrDefaultAsync(r => r.IdRecord == recordId);
 
             if (record == null || string.IsNullOrEmpty(record.SignalObjectName))
+            {
+                _log.Warn($"NPY delete fail | recordId={recordId} | reason=file_not_found");
                 return NotFound("NPY file not found");
+            }
 
             try
             {
@@ -217,6 +256,13 @@ namespace WebApi.Controllers
                     await context.SaveChangesAsync();
 
                     logger.LogInformation("Record {RecordId} and its markups deleted", recordId);
+
+                    _log.Info($"NPY delete ok | recordId={recordId} | markups={record.Markups?.Count ?? 0}");
+                }
+
+                if (!success)
+                {
+                    _log.Error($"NPY delete fail | recordId={recordId} | reason=service_returned_false");
                 }
 
                 return success ? Ok(new { Message = "Record deleted successfully" })
@@ -225,6 +271,7 @@ namespace WebApi.Controllers
             catch (Exception ex)
             {
                 logger.LogError(ex, "Error deleting record {RecordId}", recordId);
+                _log.Error(ex, $"NPY delete fail | recordId={recordId}");
                 return StatusCode(500, "Error deleting record");
             }
         }
@@ -248,6 +295,8 @@ namespace WebApi.Controllers
                 })
                 .ToListAsync();
 
+            _log.Info($"NPY doctor-records ok | doctorId={doctorId} | count={records.Count}");
+
             return Ok(records);
         }
 
@@ -258,17 +307,26 @@ namespace WebApi.Controllers
             {
                 var record = await context.records.FindAsync(recordId);
                 if (record == null || string.IsNullOrEmpty(record.SignalObjectName))
+                {
+                    _log.Warn($"NPY ecg-data fail | recordId={recordId} | reason=record_or_file_not_found");
                     return NotFound("Record or NPY file not found");
+                }
 
                 var npyBytes = await npyFileService.LoadNpyDataAsync(record.SignalObjectName);
 
                 if (npyBytes == null || npyBytes.Length == 0)
+                {
+                    _log.Warn($"NPY ecg-data fail | recordId={recordId} | reason=empty_file");
                     return BadRequest("NPY file is empty");
+                }
 
                 var array2D = NumSharp.np.Load<short[,]>(npyBytes);
 
                 if (array2D == null)
+                {
+                    _log.Error($"NPY ecg-data fail | recordId={recordId} | reason=parse_failed");
                     return BadRequest("Failed to parse NPY file");
+                }
 
                 int rows = array2D.GetLength(0);
                 int cols = array2D.GetLength(1);
@@ -292,14 +350,17 @@ namespace WebApi.Controllers
                     ChannelNames = new[] { "I", "II", "III", "aVR", "aVL", "aVF", "V1", "V2", "V3", "V4", "V5", "V6" }
                 };
 
+                _log.Info($"NPY ecg-data ok | recordId={recordId} | rows={rows} | cols={cols}");
+
                 return Ok(response);
             }
             catch (Exception ex)
             {
+                _log.Error(ex, $"NPY ecg-data fail | recordId={recordId}");
                 return StatusCode(500, $"Error parsing ECG data: {ex.Message}");
             }
         }
 
-        
+
     }
 }

@@ -84,7 +84,7 @@ function resetZoom() {
 }
 
 class ContainerZoomHandler {
-    constructor(containerIds) {
+    constructor(containerIds)   {
         this.containerIds = containerIds;
         this.containers = containerIds.map(id => document.getElementById(id)).filter(Boolean);
         this.svgs = [];

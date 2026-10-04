@@ -26,8 +26,6 @@
     position: relative;
     display: flex;
     flex-direction: column;
-    grid-row: 2;
-    height: 198px;
 }
 
 .graph-bottom svg {

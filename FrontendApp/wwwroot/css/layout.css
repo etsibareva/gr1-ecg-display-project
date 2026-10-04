@@ -11,17 +11,17 @@ body {
     align-items: center;
     justify-content: center;
     min-height: 100vh;
-    padding: 20px; /* Добавили отступы от краев окна */
+    padding: 20px;
 }
 
 .ecg-container {
     display: grid;
-    grid-template-columns: 3fr 1.2fr; /* Изменили соотношение, увеличив правую колонку */
-    grid-template-rows: 60px 1fr; /* Вторая строка теперь адаптивная */
-    gap: 12px; /* Немного увеличили gap */
+    grid-template-columns: 3fr 1.2fr;
+    grid-template-rows: 60px 1fr;
+    gap: 12px;
     width: 100%;
-    max-width: 2200px; /* Увеличили максимальную ширину */
-    height: calc(100vh - 40px); /* Адаптивная высота с учетом padding body */
+    max-width: 2200px;
+    height: calc(100vh - 40px);
     padding: 0;
     background: #e0f7fa;
 }
@@ -30,16 +30,15 @@ body {
     grid-column: 1;
     grid-row: 2;
     display: grid;
-    grid-template-rows: 1fr 200px; /* Верхняя часть адаптивная, нижняя фиксированная */
+    grid-template-rows: auto 198px 1fr;
     gap: 12px;
     height: 100%;
-    min-height: 0; /* Важно для корректной работы с адаптивной высотой */
+    min-height: 0;
 }
 
 .graphs-row {
-    grid-row: 1;
     display: grid;
-    grid-template-columns: 1fr 1fr; /* Теперь пропорционально, не фиксированные пиксели */
+    grid-template-columns: 1fr 1fr;
     gap: 12px;
     height: 100%;
     min-height: 0;
@@ -48,40 +47,36 @@ body {
 .sidebar {
     grid-column: 2;
     grid-row: 2;
-    display: flex; /* Меняем с grid на flex для лучшего контроля */
+    display: flex;
     flex-direction: column;
     gap: 12px;
     height: 100%;
     overflow-y: auto;
     min-height: 0;
-    padding-right: 4px; /* Небольшой отступ для скролла */
+    padding-right: 4px;
 }
 
-/* Адаптация для очень широких экранов */
 @media (min-width: 2200px) {
     body {
-        padding: 30px 60px; /* Увеличиваем отступы на широких экранах */
+        padding: 30px 60px;
     }
-    
+
     .ecg-container {
         max-width: 2400px;
-        grid-template-columns: 3fr 1.3fr; /* Еще немного увеличиваем правую колонку */
+        grid-template-columns: 3fr 1.3fr;
     }
 }
 
-/* Для экранов меньше 1400px */
 @media (max-width: 1400px) {
     body {
         padding: 10px;
     }
-    
+
     .ecg-container {
-        grid-template-columns: 3fr 1.1fr; /* Немного уменьшаем правую колонку */
+        grid-template-columns: 3fr 1.1fr;
     }
 }
 
-
-/* Всплывающие окна */
 /* Модальное затемнение */
 .modal-overlay {
     position: fixed;
@@ -166,7 +161,6 @@ body {
         background: #e0e2e5;
     }
 
-/* Анимация появления */
 @keyframes modalFadeIn {
     from {
         opacity: 0;
