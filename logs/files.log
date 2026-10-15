@@ -1,0 +1,60 @@
+﻿2026-10-01 11:20:06.415 | INFO  | NPY doctor-records ok | doctorId=1 | count=13
+2026-10-01 11:20:07.842 | INFO  | NPY info ok | recordId=16 | hasFile=True
+2026-10-01 11:20:07.941 | INFO  | NPY ecg-data ok | recordId=16 | rows=12 | cols=5000
+2026-10-01 11:20:08.056 | INFO  | JSON markup list ok | recordId=16 | count=0
+2026-10-01 11:36:30.511 | INFO  | NPY doctor-records ok | doctorId=1 | count=13
+2026-10-01 11:36:38.998 | INFO  | NPY doctor-records ok | doctorId=1 | count=13
+2026-10-01 11:36:43.148 | INFO  | NPY doctor-records ok | doctorId=1 | count=13
+2026-10-01 12:10:57.083 | INFO  | NPY doctor-records ok | doctorId=1 | count=13
+2026-10-01 12:11:00.201 | INFO  | NPY doctor-records ok | doctorId=1 | count=13
+2026-10-01 12:11:02.156 | INFO  | NPY doctor-records ok | doctorId=1 | count=13
+2026-10-01 12:11:06.342 | INFO  | NPY doctor-records ok | doctorId=1 | count=13
+2026-10-01 12:11:21.093 | INFO  | NPY doctor-records ok | doctorId=1 | count=13
+2026-10-01 12:11:28.446 | INFO  | NPY doctor-records ok | doctorId=1 | count=13
+2026-10-01 12:11:32.721 | INFO  | NPY doctor-records ok | doctorId=1 | count=13
+2026-10-01 12:13:54.472 | INFO  | NPY doctor-records ok | doctorId=1 | count=13
+2026-10-01 12:14:02.022 | INFO  | NPY doctor-records ok | doctorId=1 | count=13
+2026-10-01 12:14:03.499 | INFO  | NPY info ok | recordId=16 | hasFile=True
+2026-10-01 12:14:03.602 | INFO  | NPY ecg-data ok | recordId=16 | rows=12 | cols=5000
+2026-10-01 12:14:03.701 | INFO  | JSON markup list ok | recordId=16 | count=0
+2026-10-01 12:22:33.887 | INFO  | NPY doctor-records ok | doctorId=1 | count=13
+2026-10-01 12:22:37.497 | INFO  | NPY doctor-records ok | doctorId=1 | count=13
+2026-10-01 12:22:40.600 | INFO  | NPY info ok | recordId=15 | hasFile=True
+2026-10-01 12:22:40.691 | INFO  | NPY ecg-data ok | recordId=15 | rows=12 | cols=5000
+2026-10-01 12:22:40.788 | INFO  | JSON markup list ok | recordId=15 | count=0
+2026-10-01 12:27:30.711 | INFO  | NPY doctor-records ok | doctorId=1 | count=13
+2026-10-01 12:27:32.460 | INFO  | NPY doctor-records ok | doctorId=1 | count=13
+2026-10-01 12:27:35.074 | INFO  | NPY doctor-records ok | doctorId=1 | count=13
+2026-10-01 12:27:38.741 | INFO  | NPY doctor-records ok | doctorId=1 | count=13
+2026-10-01 12:27:41.588 | INFO  | NPY doctor-records ok | doctorId=1 | count=13
+2026-10-01 12:29:27.133 | INFO  | NPY doctor-records ok | doctorId=1 | count=13
+2026-10-01 12:29:28.586 | INFO  | NPY doctor-records ok | doctorId=1 | count=13
+2026-10-01 12:29:30.317 | INFO  | NPY doctor-records ok | doctorId=1 | count=13
+2026-10-01 12:29:33.537 | INFO  | NPY doctor-records ok | doctorId=1 | count=13
+2026-10-01 12:31:54.150 | INFO  | NPY doctor-records ok | doctorId=1 | count=13
+2026-10-01 12:31:55.298 | INFO  | NPY doctor-records ok | doctorId=1 | count=13
+2026-10-01 12:33:18.257 | INFO  | NPY doctor-records ok | doctorId=1 | count=13
+2026-10-01 12:33:22.247 | INFO  | NPY doctor-records ok | doctorId=1 | count=13
+2026-10-01 12:33:25.125 | INFO  | NPY info ok | recordId=15 | hasFile=True
+2026-10-01 12:33:25.236 | INFO  | NPY ecg-data ok | recordId=15 | rows=12 | cols=5000
+2026-10-01 12:33:25.344 | INFO  | JSON markup list ok | recordId=15 | count=0
+2026-10-04 06:11:18.335 | INFO  | NPY doctor-records ok | doctorId=1 | count=0
+2026-10-04 06:11:21.211 | INFO  | NPY doctor-records ok | doctorId=1 | count=0
+2026-10-04 06:11:28.979 | INFO  | NPY create-record ok | recordId=1 | doctorId=1
+2026-10-04 06:11:29.110 | INFO  | NPY upload ok | recordId=1 | size=120128 | name=201001603193674362.npy
+2026-10-04 06:11:30.268 | INFO  | NPY doctor-records ok | doctorId=1 | count=1
+2026-10-04 06:11:31.469 | INFO  | NPY info ok | recordId=1 | hasFile=True
+2026-10-04 06:11:31.581 | INFO  | NPY ecg-data ok | recordId=1 | rows=12 | cols=5000
+2026-10-04 06:11:31.704 | INFO  | JSON markup list ok | recordId=1 | count=0
+2026-10-04 06:11:46.364 | INFO  | JSON markup list ok | recordId=1 | count=0
+2026-10-04 06:11:47.841 | INFO  | JSON markup create ok | recordId=1 | markupId=1
+2026-10-04 06:11:47.924 | INFO  | JSON markup upload ok | markupId=1 | recordId=1 | size=433 | name=markup_1.json
+2026-10-04 06:11:50.214 | INFO  | JSON markup list ok | recordId=1 | count=1
+2026-10-04 06:11:51.089 | INFO  | JSON markup download ok | markupId=1 | recordId=1
+2026-10-04 06:12:05.933 | INFO  | JSON markup download ok | markupId=1 | recordId=1
+2026-10-04 06:12:07.603 | INFO  | JSON markup download ok | markupId=1 | recordId=1
+2026-10-04 06:21:24.948 | INFO  | NPY doctor-records ok | doctorId=1 | count=1
+2026-10-15 13:14:46.609 | INFO  | NPY doctor-records ok | doctorId=1 | count=1
+2026-10-15 13:14:48.160 | INFO  | NPY info ok | recordId=1 | hasFile=True
+2026-10-15 13:14:48.320 | INFO  | NPY ecg-data ok | recordId=1 | rows=12 | cols=5000
+2026-10-15 13:14:48.460 | INFO  | JSON markup list ok | recordId=1 | count=1

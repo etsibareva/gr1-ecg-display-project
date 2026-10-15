@@ -1,4 +1,6 @@
-﻿/* (!) Неясно, запускается ли вообще (!) */
+﻿using WebApi.Logging;
+
+/* (!) Неясно, запускается ли вообще (!) */
 /* (?) Работает с Access или Refresh? (?) 
  * по идее, с access
  */
@@ -14,7 +16,7 @@ namespace WebApi.Services
             next = _next;
         }
 
-        public async Task InvokeAsync(HttpContext context, TokenBlacklistService blacklistService)
+        public async Task InvokeAsync(HttpContext context, TokenBlacklistService blacklistService, IAuthLogger log)
         {
             /* (?) Оставляется явное указание каталогов (?) */
             if (context.Request.Path.StartsWithSegments("/api/auth/login") ||
@@ -33,6 +35,7 @@ namespace WebApi.Services
             if (!string.IsNullOrEmpty(token) &&
                 await blacklistService.IsTokenBlacklistedAsync(token))
             {
+                log.Warn($"BLACKLIST reject | path={context.Request.Path}");
                 context.Response.StatusCode = 401;
                 await context.Response.WriteAsync("Token revoked");
                 return;

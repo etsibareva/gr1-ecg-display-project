@@ -2,6 +2,7 @@
 using Microsoft.Extensions.Caching.Distributed;
 using System.Security.Cryptography;
 using System.Text;
+using WebApi.Logging;
 
 /* (!) Неясно, запускается ли вообще (!) */
 /* (!) Есть зависание запуска при многократном использовании (!) */
@@ -11,17 +12,23 @@ namespace WebApi.Services
     public class TokenBlacklistService
     {
         private readonly IDistributedCache cache;
+        private readonly IAuthLogger _log;
 
-        public TokenBlacklistService(IDistributedCache _cache)
+        public TokenBlacklistService(IDistributedCache _cache, IAuthLogger log)
         {
             cache = _cache;
+            _log = log;
         }
 
         public async Task<bool> IsTokenBlacklistedAsync(string token)
         {
             var tokenHash = HashToken(token);
             var cachedValue = await cache.GetStringAsync($"blacklist:{tokenHash}");
-            return cachedValue != null;
+
+            var isBlacklisted = cachedValue != null;
+            _log.Info($"BLACKLIST check | active={isBlacklisted}");
+
+            return isBlacklisted;
         }
 
         public async Task AddToBlacklistAsync(string token, TimeSpan expiry)
@@ -32,6 +39,8 @@ namespace WebApi.Services
                 "revoked",
                 new DistributedCacheEntryOptions { AbsoluteExpirationRelativeToNow = expiry }
             );
+
+            _log.Info($"BLACKLIST add | len={token.Length} | expiry={expiry}");
         }
 
         private static string HashToken(string token)

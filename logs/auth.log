@@ -1,0 +1,124 @@
+﻿2026-10-01 11:20:06.287 | INFO  | ME ok | id=1
+2026-10-01 11:36:29.283 | INFO  | PASSWORD verify ok
+2026-10-01 11:36:29.315 | INFO  | JWT issue | id=1 | login=admin123
+2026-10-01 11:36:29.455 | INFO  | REFRESH issue | id=1 | expiresDays=7
+2026-10-01 11:36:29.463 | INFO  | LOGIN ok | id=1 | login=admin123
+2026-10-01 11:36:29.655 | INFO  | ME ok | id=1
+2026-10-01 11:36:30.398 | INFO  | ME ok | id=1
+2026-10-01 11:36:38.979 | INFO  | ME ok | id=1
+2026-10-01 11:36:42.194 | INFO  | ME ok | id=1
+2026-10-01 11:36:43.129 | INFO  | ME ok | id=1
+2026-10-01 12:10:55.552 | INFO  | PASSWORD verify ok
+2026-10-01 12:10:55.588 | INFO  | JWT issue | id=1 | login=admin123
+2026-10-01 12:10:55.742 | INFO  | REFRESH issue | id=1 | expiresDays=7
+2026-10-01 12:10:55.750 | INFO  | LOGIN ok | id=1 | login=admin123
+2026-10-01 12:10:55.952 | INFO  | ME ok | id=1
+2026-10-01 12:10:56.962 | INFO  | ME ok | id=1
+2026-10-01 12:11:00.179 | INFO  | ME ok | id=1
+2026-10-01 12:11:02.138 | INFO  | ME ok | id=1
+2026-10-01 12:11:05.352 | INFO  | ME ok | id=1
+2026-10-01 12:11:06.323 | INFO  | ME ok | id=1
+2026-10-01 12:11:21.072 | INFO  | ME ok | id=1
+2026-10-01 12:11:27.625 | INFO  | ME ok | id=1
+2026-10-01 12:11:28.425 | INFO  | ME ok | id=1
+2026-10-01 12:11:31.016 | INFO  | ME ok | id=1
+2026-10-01 12:11:32.703 | INFO  | ME ok | id=1
+2026-10-01 12:13:53.251 | INFO  | PASSWORD verify ok
+2026-10-01 12:13:53.283 | INFO  | JWT issue | id=1 | login=admin123
+2026-10-01 12:13:53.424 | INFO  | REFRESH issue | id=1 | expiresDays=7
+2026-10-01 12:13:53.433 | INFO  | LOGIN ok | id=1 | login=admin123
+2026-10-01 12:13:53.624 | INFO  | ME ok | id=1
+2026-10-01 12:13:54.355 | INFO  | ME ok | id=1
+2026-10-01 12:13:57.749 | INFO  | ME ok | id=1
+2026-10-01 12:14:00.220 | INFO  | ME ok | id=1
+2026-10-01 12:14:01.999 | INFO  | ME ok | id=1
+2026-10-01 12:22:32.307 | INFO  | PASSWORD verify ok
+2026-10-01 12:22:32.342 | INFO  | JWT issue | id=1 | login=admin123
+2026-10-01 12:22:32.492 | INFO  | REFRESH issue | id=1 | expiresDays=7
+2026-10-01 12:22:32.501 | INFO  | LOGIN ok | id=1 | login=admin123
+2026-10-01 12:22:32.710 | INFO  | ME ok | id=1
+2026-10-01 12:22:33.769 | INFO  | ME ok | id=1
+2026-10-01 12:22:37.471 | INFO  | ME ok | id=1
+2026-10-01 12:27:29.460 | INFO  | PASSWORD verify ok
+2026-10-01 12:27:29.491 | INFO  | JWT issue | id=1 | login=admin123
+2026-10-01 12:27:29.638 | INFO  | REFRESH issue | id=1 | expiresDays=7
+2026-10-01 12:27:29.646 | INFO  | LOGIN ok | id=1 | login=admin123
+2026-10-01 12:27:29.841 | INFO  | ME ok | id=1
+2026-10-01 12:27:30.598 | INFO  | ME ok | id=1
+2026-10-01 12:27:32.434 | INFO  | ME ok | id=1
+2026-10-01 12:27:35.055 | INFO  | ME ok | id=1
+2026-10-01 12:27:38.720 | INFO  | ME ok | id=1
+2026-10-01 12:27:41.564 | INFO  | ME ok | id=1
+2026-10-01 12:29:25.909 | INFO  | PASSWORD verify ok
+2026-10-01 12:29:25.941 | INFO  | JWT issue | id=1 | login=admin123
+2026-10-01 12:29:26.074 | INFO  | REFRESH issue | id=1 | expiresDays=7
+2026-10-01 12:29:26.083 | INFO  | LOGIN ok | id=1 | login=admin123
+2026-10-01 12:29:26.280 | INFO  | ME ok | id=1
+2026-10-01 12:29:27.026 | INFO  | ME ok | id=1
+2026-10-01 12:29:28.562 | INFO  | ME ok | id=1
+2026-10-01 12:29:30.300 | INFO  | ME ok | id=1
+2026-10-01 12:29:33.514 | INFO  | ME ok | id=1
+2026-10-01 12:31:52.776 | INFO  | PASSWORD verify ok
+2026-10-01 12:31:52.806 | INFO  | JWT issue | id=1 | login=admin123
+2026-10-01 12:31:52.944 | INFO  | REFRESH issue | id=1 | expiresDays=7
+2026-10-01 12:31:52.952 | INFO  | LOGIN ok | id=1 | login=admin123
+2026-10-01 12:31:53.141 | INFO  | ME ok | id=1
+2026-10-01 12:31:54.003 | INFO  | ME ok | id=1
+2026-10-01 12:31:55.275 | INFO  | ME ok | id=1
+2026-10-01 12:33:17.200 | INFO  | PASSWORD verify ok
+2026-10-01 12:33:17.233 | INFO  | JWT issue | id=1 | login=admin123
+2026-10-01 12:33:17.370 | INFO  | REFRESH issue | id=1 | expiresDays=7
+2026-10-01 12:33:17.377 | INFO  | LOGIN ok | id=1 | login=admin123
+2026-10-01 12:33:17.571 | INFO  | ME ok | id=1
+2026-10-01 12:33:18.152 | INFO  | ME ok | id=1
+2026-10-01 12:33:22.220 | INFO  | ME ok | id=1
+2026-10-04 05:43:53.497 | WARN  | PASSWORD verify fail | result=Failed
+2026-10-04 05:43:53.514 | WARN  | LOGIN fail | login=admin123
+2026-10-04 05:46:20.860 | ERROR | PASSWORD_PEPPER not found in environment variables
+2026-10-04 05:46:23.334 | ERROR | PASSWORD_PEPPER not found in environment variables
+2026-10-04 05:46:25.573 | ERROR | PASSWORD_PEPPER not found in environment variables
+2026-10-04 05:46:28.072 | ERROR | PASSWORD_PEPPER not found in environment variables
+2026-10-04 05:46:31.009 | ERROR | PASSWORD_PEPPER not found in environment variables
+2026-10-04 05:46:34.850 | ERROR | PASSWORD_PEPPER not found in environment variables
+2026-10-04 05:46:40.284 | ERROR | PASSWORD_PEPPER not found in environment variables
+2026-10-04 05:46:48.966 | ERROR | PASSWORD_PEPPER not found in environment variables
+2026-10-04 05:47:03.972 | ERROR | PASSWORD_PEPPER not found in environment variables
+2026-10-04 05:48:20.361 | ERROR | PASSWORD_PEPPER not found in environment variables
+2026-10-04 05:48:22.668 | ERROR | PASSWORD_PEPPER not found in environment variables
+2026-10-04 05:48:24.965 | ERROR | PASSWORD_PEPPER not found in environment variables
+2026-10-04 05:48:27.383 | ERROR | PASSWORD_PEPPER not found in environment variables
+2026-10-04 05:48:30.171 | ERROR | PASSWORD_PEPPER not found in environment variables
+2026-10-04 05:48:33.822 | ERROR | PASSWORD_PEPPER not found in environment variables
+2026-10-04 05:48:39.218 | ERROR | PASSWORD_PEPPER not found in environment variables
+2026-10-04 05:48:47.798 | ERROR | PASSWORD_PEPPER not found in environment variables
+2026-10-04 05:49:02.672 | ERROR | PASSWORD_PEPPER not found in environment variables
+2026-10-04 05:49:30.418 | ERROR | PASSWORD_PEPPER not found in environment variables
+2026-10-04 05:50:23.651 | ERROR | PASSWORD_PEPPER not found in environment variables
+2026-10-04 06:05:46.731 | WARN  | LOGIN fail | login=admin123
+2026-10-04 06:11:07.386 | INFO  | PASSWORD hash ok
+2026-10-04 06:11:07.545 | INFO  | REGISTER ok | id=1 | login=admin123 | email=admin123@example.com
+2026-10-04 06:11:15.268 | INFO  | PASSWORD verify ok
+2026-10-04 06:11:15.297 | INFO  | JWT issue | id=1 | login=admin123
+2026-10-04 06:11:15.377 | INFO  | REFRESH issue | id=1 | expiresDays=7
+2026-10-04 06:11:15.386 | INFO  | LOGIN ok | id=1 | login=admin123
+2026-10-04 06:11:15.551 | INFO  | ME ok | id=1
+2026-10-04 06:11:18.234 | INFO  | ME ok | id=1
+2026-10-04 06:19:17.177 | WARN  | PASSWORD verify fail | result=Failed
+2026-10-04 06:19:17.190 | WARN  | LOGIN fail | login=admin123
+2026-10-04 06:19:22.660 | WARN  | PASSWORD verify fail | result=Failed
+2026-10-04 06:19:22.672 | WARN  | LOGIN fail | login=admin123
+2026-10-04 06:21:23.197 | INFO  | PASSWORD verify ok
+2026-10-04 06:21:23.230 | INFO  | JWT issue | id=1 | login=admin123
+2026-10-04 06:21:23.370 | INFO  | REFRESH issue | id=1 | expiresDays=7
+2026-10-04 06:21:23.380 | INFO  | LOGIN ok | id=1 | login=admin123
+2026-10-04 06:21:23.568 | INFO  | ME ok | id=1
+2026-10-04 06:21:24.831 | INFO  | ME ok | id=1
+2026-10-15 13:14:34.601 | WARN  | LOGIN fail | login=admin1234@example.com
+2026-10-15 13:14:37.835 | WARN  | LOGIN fail | login=admin123@example.com
+2026-10-15 13:14:38.819 | WARN  | LOGIN fail | login=admin123@example.com
+2026-10-15 13:14:44.274 | INFO  | PASSWORD verify ok
+2026-10-15 13:14:44.303 | INFO  | JWT issue | id=1 | login=admin123
+2026-10-15 13:14:44.540 | INFO  | REFRESH issue | id=1 | expiresDays=7
+2026-10-15 13:14:44.552 | INFO  | LOGIN ok | id=1 | login=admin123
+2026-10-15 13:14:44.800 | INFO  | ME ok | id=1
+2026-10-15 13:14:46.411 | INFO  | ME ok | id=1
