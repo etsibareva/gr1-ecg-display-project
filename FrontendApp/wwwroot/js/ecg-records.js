@@ -1097,7 +1097,7 @@ async function loadDoctorRecords() {
                     </div>
                     <button class="delete-record-btn" onclick="deleteRecord(${r.recordId}, event)">✕</button>
                 </div>
-                <div class="record-meta" style="cursor: pointer; padding: 0 8px 8px 8px; font-size: 12px; color: #666;" onclick="loadRecord(${r.recordId})">
+                <div class="record-meta" style="cursor: pointer; padding: 0 8px 8px 8px; font-size: 12px; color: #667;" onclick="loadRecord(${r.recordId})">
                     ${formatFileSize(r.fileSize)}
                 </div>
             </div>`;

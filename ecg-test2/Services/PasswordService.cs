@@ -9,10 +9,17 @@ namespace WebApi.Services
     {
         private readonly PasswordHasher<Doctor> passwordHasher = new PasswordHasher<Doctor>();
         private readonly IAuthLogger _log;
+        private readonly string _pepper;
 
         public PasswordService(IAuthLogger log)
         {
             _log = log;
+            _pepper = Environment.GetEnvironmentVariable("PASSWORD_PEPPER");
+            if (string.IsNullOrEmpty(_pepper))
+            {
+                _log.Error("PASSWORD_PEPPER not found in environment variables");
+                throw new InvalidOperationException("PASSWORD_PEPPER not found in environment variables");
+            }
         }
 
         /* (!) Ввести использование SALT для хеширования паролей (!) */
@@ -20,7 +27,8 @@ namespace WebApi.Services
         {
             try
             {
-                var hash = passwordHasher.HashPassword(null, password);
+                var peppered = password + _pepper;
+                var hash = passwordHasher.HashPassword(null, peppered);
                 _log.Info("PASSWORD hash ok");
                 return hash;
             }
@@ -33,7 +41,8 @@ namespace WebApi.Services
 
         public bool VerifyPassword(string password, string passwordHash)
         {
-            var result = passwordHasher.VerifyHashedPassword(null, passwordHash, password);
+            var peppered = password + _pepper;
+            var result = passwordHasher.VerifyHashedPassword(null, passwordHash, peppered);
 
             if (result == PasswordVerificationResult.Success)
                 _log.Info("PASSWORD verify ok");
